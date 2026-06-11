@@ -295,23 +295,41 @@ export default class PasswordLogin extends React.PureComponent<IProps, IState> {
             case LoginField.MatrixId:
                 classes.error = this.props.loginIncorrect && !this.props.username;
                 return (
-                    <Field
-                        id="mx_LoginForm_username"
+                    // <Field
+                    //     id="mx_LoginForm_username"
+                    //     className={classNames(classes)}
+                    //     name="username" // make it a little easier for browser's remember-password
+                    //     autoComplete="username"
+                    //     key="username_input"
+                    //     type="text"
+                    //     label={_t("common|username")}
+                    //     placeholder={_t("common|username")}
+                    //     value={this.props.username}
+                    //     onChange={this.onUsernameChanged}
+                    //     onBlur={this.onUsernameBlur}
+                    //     disabled={this.props.busy}
+                    //     autoFocus={autoFocus}
+                    //     onValidate={this.onUsernameValidate}
+                    //     ref={(field): void => {
+                    //         this[LoginField.MatrixId] = field;
+                    //     }}
+                    // />
+                    <EmailField
+                        id="mx_LoginForm_email"
                         className={classNames(classes)}
                         name="username" // make it a little easier for browser's remember-password
-                        autoComplete="username"
-                        key="username_input"
-                        type="text"
-                        label={_t("common|username")}
-                        placeholder={_t("common|username")}
+                        autoComplete="email"
+                        type="email"
+                        key="email_input"
+                        placeholder="joe@example.com"
                         value={this.props.username}
                         onChange={this.onUsernameChanged}
                         onBlur={this.onUsernameBlur}
                         disabled={this.props.busy}
                         autoFocus={autoFocus}
-                        onValidate={this.onUsernameValidate}
-                        ref={(field): void => {
-                            this[LoginField.MatrixId] = field;
+                        onValidate={this.onEmailValidate}
+                        fieldRef={(field): void => {
+                            this[LoginField.Email] = field;
                         }}
                     />
                 );
