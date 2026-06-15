@@ -84,6 +84,7 @@ import { useModuleSpacePanelItems } from "../../../modules/ExtrasApi.ts";
 import { UserMenuViewModel } from "../../../viewmodels/menus/UserMenuViewModel.ts";
 import { useMatrixClientContext } from "../../../contexts/MatrixClientContext.tsx";
 import { SDKContext } from "../../../contexts/SDKContext.ts";
+import { useIsAdmin } from "../../../hooks/useIsAdmin";
 
 const useSpaces = (): [Room[], MetaSpace[], Room[], SpaceKey] => {
     const invites = useEventEmitterState<Room[]>(SpaceStore.instance, UPDATE_INVITED_SPACES, () => {
@@ -298,11 +299,12 @@ interface IInnerSpacePanelProps extends DroppableProvidedProps {
     setPanelCollapsed: Dispatch<SetStateAction<boolean>>;
     isDraggingOver: boolean;
     innerRef: RefCallback<HTMLElement>;
+    isAdmin: boolean;
 }
 
 // Optimisation based on https://github.com/atlassian/react-beautiful-dnd/blob/master/docs/api/droppable.md#recommended-droppable--performance-optimisation
 const InnerSpacePanel = React.memo<IInnerSpacePanelProps>(
-    ({ children, isPanelCollapsed, setPanelCollapsed, isDraggingOver, innerRef, ...props }) => {
+    ({ children, isPanelCollapsed, setPanelCollapsed, isDraggingOver, innerRef, isAdmin, ...props }) => {
         const [invites, metaSpaces, actualSpaces, activeSpace] = useSpaces();
         const activeSpaces = activeSpace ? [activeSpace] : [];
 
@@ -380,9 +382,9 @@ const InnerSpacePanel = React.memo<IInnerSpacePanelProps>(
                         />
                     </li>
                 ))}
-                {shouldShowComponent(UIComponent.CreateSpaces) && (
+                {isAdmin && (shouldShowComponent(UIComponent.CreateSpaces) && (
                     <CreateSpaceButton isPanelCollapsed={isPanelCollapsed} setPanelCollapsed={setPanelCollapsed} />
-                )}
+                ))}
             </IndicatorScrollbar>
         );
     },
@@ -390,6 +392,7 @@ const InnerSpacePanel = React.memo<IInnerSpacePanelProps>(
 
 const SpacePanel: React.FC = () => {
     const client = useMatrixClientContext();
+    const isAdmin = useIsAdmin();
     const [dragging, setDragging] = useState(false);
     const [isPanelCollapsed, setPanelCollapsed] = useState(true);
     const ref = useRef<HTMLDivElement>(null);
@@ -489,6 +492,7 @@ const SpacePanel: React.FC = () => {
                                     setPanelCollapsed={setPanelCollapsed}
                                     isDraggingOver={snapshot.isDraggingOver}
                                     innerRef={provided.innerRef}
+                                    isAdmin={isAdmin}
                                 >
                                     {provided.placeholder}
                                 </InnerSpacePanel>
