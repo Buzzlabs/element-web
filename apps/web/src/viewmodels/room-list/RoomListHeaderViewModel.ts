@@ -32,6 +32,7 @@ import RoomListStoreV3 from "../../stores/room-list-v3/RoomListStoreV3";
 import { SortingAlgorithm } from "../../stores/room-list-v3/skip-list/sorters";
 import { SettingLevel } from "../../settings/SettingLevel";
 import { createRoom, hasCreateRoomRights } from "./utils";
+import { isGlobalAdmin } from "../../utils/admin/isGlobalAdmin";
 
 export interface Props {
     /**
@@ -57,9 +58,12 @@ export class RoomListHeaderViewModel
      * Used to manage event listeners.
      */
     private activeSpace: Room | null;
+    private isAdmin = false;
 
     public constructor(props: Props) {
         super(props, getInitialSnapshot(props.spaceStore, props.matrixClient));
+
+        this.loadAdminStatus();
 
         // Listen for video rooms feature flag changes
         const settingsFeatureVideoRef = SettingsStore.watchSetting(
@@ -84,6 +88,18 @@ export class RoomListHeaderViewModel
         this.disposables.track(() => defaultDispatcher.unregister(dispatcherRef));
     }
 
+    private async loadAdminStatus(): Promise<void> {
+        this.isAdmin = await isGlobalAdmin();
+
+        this.snapshot.merge(
+            computeHeaderSpaceState(
+                this.props.spaceStore,
+                this.props.matrixClient,
+                this.isAdmin,
+            ),
+        );
+    }
+
     /**
      * Handles space change events.
      */
@@ -99,7 +115,7 @@ export class RoomListHeaderViewModel
         }
 
         this.snapshot.merge({
-            ...computeHeaderSpaceState(this.props.spaceStore, this.props.matrixClient),
+            ...computeHeaderSpaceState(this.props.spaceStore, this.props.matrixClient, this.isAdmin),
         });
     };
 
@@ -126,17 +142,20 @@ export class RoomListHeaderViewModel
         });
     };
 
-    public createChatRoom = (e: Event): void => {
+    public createChatRoom = async (e: Event): Promise<void> => {
+        if (!(await isGlobalAdmin())) return;
         defaultDispatcher.fire(Action.CreateChat);
         PosthogTrackers.trackInteraction("WebRoomListHeaderPlusMenuCreateChatItem", e);
     };
 
-    public createRoom = (e: Event): void => {
+    public createRoom = async (e: Event): Promise<void> => {
+        if (!(await isGlobalAdmin())) return;
         createRoom(this.activeSpace);
         PosthogTrackers.trackInteraction("WebRoomListHeaderPlusMenuCreateRoomItem", e);
     };
 
-    public createVideoRoom = (): void => {
+    public createVideoRoom = async (): Promise<void> => {
+        if (!(await isGlobalAdmin())) return;
         const type = SettingsStore.getValue("feature_element_call_video_rooms")
             ? RoomType.UnstableCall
             : RoomType.ElementVideo;
@@ -205,7 +224,8 @@ export class RoomListHeaderViewModel
         this.snapshot.merge({ isMessagePreviewEnabled });
     };
 
-    public createSection = (): void => {
+    public createSection = async (): Promise<void> => {
+        if (!(await isGlobalAdmin())) return;
         RoomListStoreV3.instance.createSection();
         PosthogTrackers.trackSectionCreation("RoomListHeader");
     };
@@ -217,7 +237,7 @@ export class RoomListHeaderViewModel
                 : Action.RoomListCollapseAllSections;
         defaultDispatcher.fire(action);
 
-        const kind = action === Action.RoomListExpandAllSections ? "Expand" : "Collapse";
+         const kind = action === Action.RoomListExpandAllSections ? "Expand" : "Collapse";
         PosthogTrackers.trackCollapseOrExpandSection(kind, "RoomListHeader");
     };
 
@@ -257,7 +277,7 @@ function getInitialSnapshot(spaceStore: SpaceStoreClass, matrixClient: MatrixCli
     return {
         activeSortOption,
         isMessagePreviewEnabled,
-        ...computeHeaderSpaceState(spaceStore, matrixClient),
+        ...computeHeaderSpaceState(spaceStore, matrixClient,false),
     };
 }
 
@@ -288,6 +308,7 @@ function getCanCreateVideoRoom(canCreateRoom: boolean): boolean {
 function computeHeaderSpaceState(
     spaceStore: SpaceStoreClass,
     matrixClient: MatrixClient,
+    isAdmin: boolean
 ): Omit<RoomListHeaderViewSnapshot, "activeSortOption" | "isMessagePreviewEnabled"> {
     const isSectionFeatureEnabled = SettingsStore.getValue("feature_room_list_sections");
 
@@ -296,7 +317,7 @@ function computeHeaderSpaceState(
 
     const canCreateRoom = hasCreateRoomRights(matrixClient, activeSpace);
     const canCreateVideoRoom = getCanCreateVideoRoom(canCreateRoom);
-    const displayComposeMenu = isSectionFeatureEnabled || canCreateRoom;
+    const displayComposeMenu = isAdmin; // canCreateRoom;
     const displaySpaceMenu = Boolean(activeSpace);
     const canInviteInSpace = Boolean(
         activeSpace?.getJoinRule() === JoinRule.Public || activeSpace?.canInvite(matrixClient.getSafeUserId()),
