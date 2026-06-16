@@ -995,7 +995,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
             hiddenResultsSection = (
                 <div className="mx_SpotlightDialog_section mx_SpotlightDialog_hiddenResults" role="group">
                     <h4>{_t("spotlight_dialog|result_may_be_hidden_warning")}</h4>
-                    <div className="mx_SpotlightDialog_otherSearches_messageSearchText">
+                    {/* <div className="mx_SpotlightDialog_otherSearches_messageSearchText">
                         {_t("spotlight_dialog|cant_find_room_helpful_hint")}
                     </div>
                     <Option
@@ -1013,30 +1013,30 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                             <RoomIcon />
                             {_t("spotlight_dialog|create_new_room_button")}
                         </span>
-                    </Option>
+                    </Option> */}
                 </div>
             );
         }
 
-        let groupChatSection: JSX.Element | undefined;
-        if (filter === Filter.People) {
-            groupChatSection = (
-                <div
-                    className="mx_SpotlightDialog_section mx_SpotlightDialog_otherSearches"
-                    role="group"
-                    aria-labelledby="mx_SpotlightDialog_section_groupChat"
-                >
-                    <h4 id="mx_SpotlightDialog_section_groupChat">{_t("spotlight_dialog|group_chat_section_title")}</h4>
-                    <Option
-                        id="mx_SpotlightDialog_button_startGroupChat"
-                        onClick={() => showStartChatInviteDialog(trimmedQuery)}
-                    >
-                        <GroupIcon />
-                        {_t("spotlight_dialog|start_group_chat_button")}
-                    </Option>
-                </div>
-            );
-        }
+        // let groupChatSection: JSX.Element | undefined;
+        // if (filter === Filter.People) {
+        //     groupChatSection = (
+        //         <div
+        //             className="mx_SpotlightDialog_section mx_SpotlightDialog_otherSearches"
+        //             role="group"
+        //             aria-labelledby="mx_SpotlightDialog_section_groupChat"
+        //         >
+        //             <h4 id="mx_SpotlightDialog_section_groupChat">{_t("spotlight_dialog|group_chat_section_title")}</h4>
+        //             <Option
+        //                 id="mx_SpotlightDialog_button_startGroupChat"
+        //                 onClick={() => showStartChatInviteDialog(trimmedQuery)}
+        //             >
+        //                 <GroupIcon />
+        //                 {_t("spotlight_dialog|start_group_chat_button")}
+        //             </Option>
+        //         </div>
+        //     );
+        // }
 
         content = (
             <>
@@ -1049,7 +1049,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 {joinRoomSection}
                 {hiddenResultsSection}
                 {otherSearchesSection}
-                {groupChatSection}
+                {/* {groupChatSection} */}
             </>
         );
     } else {
