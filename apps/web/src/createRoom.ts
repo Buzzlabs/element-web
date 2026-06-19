@@ -84,6 +84,11 @@ export interface IOpts {
     // contextually only makes sense if parentSpace is specified, if true then will be added to parentSpace as suggested
     suggested?: boolean;
     joinRule?: JoinRule;
+    useModuleCreation?: boolean;
+    keyword?: string;
+    visible?: boolean;
+    access_type?: "public" | "private";
+    price?: number;
 }
 
 const DEFAULT_EVENT_POWER_LEVELS = {
@@ -321,25 +326,75 @@ export default async function createRoom(client: MatrixClient, opts: IOpts): Pro
 
     let roomId: string;
     let room: Promise<Room>;
-    return client
-        .createRoom(createOpts)
-        .catch(function (err) {
-            // NB This checks for the Synapse-specific error condition of a room creation
-            // having been denied because the requesting user wanted to publish the room,
-            // but the server denies them that permission (via room_list_publication_rules).
-            // The check below responds by retrying without publishing the room.
+    let createPromise: Promise<{ room_id: string }>;
+
+    const createModuleRoom = async (): Promise<{ room_id: string }> => {
+        const response = await fetch(
+            `${client.baseUrl}/_synapse/room_service/create`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${client.getAccessToken()}`,
+                },
+                body: JSON.stringify({
+                    name: opts.name ?? "",
+                    room_kind: "group",
+                    keyword: opts.keyword,
+                    visible: opts.visible,
+                    access_type: opts.access_type,
+                    price: opts.price,
+                }),
+            },
+        );
+
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+        return response.json();
+    };
+
+    if (opts.useModuleCreation) {
+        createPromise = createModuleRoom();
+    } else {
+        createPromise = client.createRoom(createOpts);
+    }
+
+    return createPromise
+    .catch(function (err) {
+        if (!opts.useModuleCreation) {
             if (
                 err.httpStatus === 403 &&
                 err.errcode === "M_UNKNOWN" &&
                 err.data.error === "Not allowed to publish room"
             ) {
-                logger.warn("Failed to publish room, try again without publishing it");
                 createOpts.visibility = Visibility.Private;
                 return client.createRoom(createOpts);
-            } else {
-                return Promise.reject(err);
             }
-        })
+        }
+
+    return Promise.reject(err);
+})
+    
+            
+        // .catch(function (err) {
+        //     // NB This checks for the Synapse-specific error condition of a room creation
+        //     // having been denied because the requesting user wanted to publish the room,
+        //     // but the server denies them that permission (via room_list_publication_rules).
+        //     // The check below responds by retrying without publishing the room.
+        //     if (
+        //         err.httpStatus === 403 &&
+        //         err.errcode === "M_UNKNOWN" &&
+        //         err.data.error === "Not allowed to publish room"
+        //     ) {
+        //         logger.warn("Failed to publish room, try again without publishing it");
+        //         createOpts.visibility = Visibility.Private;
+        //         return client.createRoom(createOpts);
+        //     } else {
+        //         return Promise.reject(err);
+        //     }
+        // })
         .then(async (res): Promise<void> => {
             roomId = res.room_id;
 

@@ -92,6 +92,12 @@ interface IState {
      * Indicates whether the user can change encryption settings for the room.
      */
     canChangeEncryption: boolean;
+    // módulo do synapse create room
+    useModuleCreation : true;
+    keyword: string;
+    visible: boolean;
+    price: string;
+    keywordAlreadyExists: boolean;
 }
 
 export default class CreateRoomDialog extends React.Component<IProps, IState> {
@@ -132,6 +138,11 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
             noFederate: SdkConfig.get().default_federate === false,
             nameIsValid: false,
             canChangeEncryption: false,
+            useModuleCreation: true,
+            keyword: "",
+            visible: false,
+            price: "0",
+            keywordAlreadyExists: false,
         };
     }
 
@@ -170,7 +181,14 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
             opts.joinRule = JoinRule.Knock;
             createOpts.visibility = this.state.isPublicKnockRoom ? Visibility.Public : Visibility.Private;
         }
-
+        opts.useModuleCreation = true;
+        opts.keyword = this.state.keyword;
+        opts.visible = this.state.visible;
+        opts.access_type = 
+            this.state.joinRule === JoinRule.Public
+                ? "public"
+                : "private";
+        opts.price = Number(this.state.price);
         return opts;
     }
 
@@ -211,6 +229,15 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
         // first. Queue a `setState` callback and wait for it to resolve.
         await new Promise<void>((resolve) => this.setState({}, resolve));
         if (this.state.nameIsValid && (!this.aliasField.current || this.aliasField.current.isValid)) {
+            if (this.state.useModuleCreation) {
+                try {
+                    this.validateModuleRoom();
+                    } catch (e) {
+                        alert((e as Error).message);
+                        return;
+                    }
+    
+            }
             this.props.onFinished(true, this.roomCreateOptions());
         } else {
             let field: RoomAliasField | Field | null = null;
@@ -281,6 +308,32 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
             },
         ],
     });
+
+    private validateModuleRoom(): void {
+        if (!this.state.keyword.trim()) {
+            throw new Error("Keyword obrigatória");
+        }
+
+        const slug = this.state.keyword
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, "_")
+            .replace(/[^a-z0-9_]/g, "");
+
+        if (slug !== this.state.keyword.trim()) {
+            throw new Error("Keyword inválida");
+        }
+
+        if (
+            this.state.visible &&
+            this.state.joinRule !== JoinRule.Public &&
+            Number(this.state.price) <= 0
+        ) {
+            throw new Error(
+                "Salas privadas visíveis precisam de preço",
+            );
+        }
+    }
 
     public render(): React.ReactNode {
         const isVideoRoom = this.props.type === RoomType.ElementVideo || this.props.type === RoomType.UnstableCall;
@@ -496,6 +549,38 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
                                 />
                             </details>
                         )}
+                         <Field
+                            label="Keyword"
+                            value={this.state.keyword}
+                            onChange={(e) => this.setState({
+                                keyword: e.target.value,
+                                keywordAlreadyExists: false,
+                            })}
+                        />
+
+                        <SettingsToggleInput
+                            name="visible"
+                            label="Exibir no Explore"
+                            checked={this.state.visible}
+                            onChange={(e) =>
+                                this.setState({ visible: e.target.checked })
+                            }
+                        />
+
+                       {
+                        this.state.visible &&
+                        this.state.joinRule !== JoinRule.Public && (
+                            <Field
+                                label="Preço"
+                                value={this.state.price}
+                                onChange={(e) =>
+                                    this.setState({
+                                        price: e.target.value,
+                                    })
+                                }
+                            />
+                        )
+                    }
                     </Form.Root>
                 </div>
                 <DialogButtons
