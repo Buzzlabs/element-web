@@ -349,7 +349,12 @@ export default async function createRoom(client: MatrixClient, opts: IOpts): Pro
         );
 
         if (!response.ok) {
-            throw new Error(await response.text());
+            const body = await response.text();
+
+            const error = new Error(body);
+            (error as any).status = response.status;
+
+            throw error;
         }
 
         return response.json();
@@ -363,6 +368,12 @@ export default async function createRoom(client: MatrixClient, opts: IOpts): Pro
 
     return createPromise
     .catch(function (err) {
+        if (opts.useModuleCreation &&
+            err.status === 409 &&
+            err.message.includes("Keyword already in use")
+        ) {
+            throw err;
+        }
         if (!opts.useModuleCreation) {
             if (
                 err.httpStatus === 403 &&
@@ -479,6 +490,12 @@ export default async function createRoom(client: MatrixClient, opts: IOpts): Pro
                 });
                 logger.error("Failed to create room " + roomId + " " + err);
                 let description = _t("create_room|generic_error");
+                if (
+                    err.status === 409 &&
+                    err.message.includes("Keyword already in use")
+                ) {
+                    description = "A chave informada já está em uso.";
+                }
                 if (err.errcode === "M_UNSUPPORTED_ROOM_VERSION") {
                     // Technically not possible with the UI as of April 2019 because there's no
                     // options for the user to change this. However, it's not a bad thing to report

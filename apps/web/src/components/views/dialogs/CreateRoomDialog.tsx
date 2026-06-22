@@ -98,6 +98,7 @@ interface IState {
     visible: boolean;
     price: string;
     keywordAlreadyExists: boolean;
+    invalidPrice: boolean;
 }
 
 export default class CreateRoomDialog extends React.Component<IProps, IState> {
@@ -143,6 +144,7 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
             visible: false,
             price: "0",
             keywordAlreadyExists: false,
+            invalidPrice: false,
         };
     }
 
@@ -329,9 +331,11 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
             this.state.joinRule !== JoinRule.Public &&
             Number(this.state.price) <= 0
         ) {
-            throw new Error(
-                "Salas privadas visíveis precisam de preço",
-            );
+            this.setState({
+                invalidPrice: true,
+            });
+
+            throw new Error("Preço inválido");
         }
     }
 
@@ -570,15 +574,31 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
                        {
                         this.state.visible &&
                         this.state.joinRule !== JoinRule.Public && (
-                            <Field
-                                label="Preço"
-                                value={this.state.price}
-                                onChange={(e) =>
-                                    this.setState({
-                                        price: e.target.value,
-                                    })
+                            <>
+                                <Field
+                                    label="Preço"
+                                    value={this.state.price}
+                                    onChange={(e) =>
+                                        this.setState({
+                                            price: e.target.value,
+                                            invalidPrice: false,
+                                        })
+                                    }
+                                    className={
+                                        this.state.invalidPrice
+                                            ? "mx_Field_invalid"
+                                            : undefined
+                                    }
+                                />
+
+                                {
+                                    this.state.invalidPrice && (
+                                        <div className="mx_Field_error">
+                                            Escolha um valor maior que zero.
+                                        </div>
+                                    )
                                 }
-                            />
+                            </>
                         )
                     }
                     </Form.Root>
