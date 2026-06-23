@@ -193,19 +193,19 @@ export function RoomListHeaderView({ vm }: Readonly<RoomListHeaderViewProps>): J
                     {/* If we don't display the compose menu, it means that the user can only send DM */}
                     {displayComposeMenu ? (
                         <ComposeMenuView vm={vm} />
-                    ) : (
-                        <IconButton
-                            size="28px"
-                            style={{ padding: "4px" }}
-                            onClick={(e) => vm.createChatRoom(e.nativeEvent)}
-                            tooltip={_t("action|new_conversation")}
-                        >
-                            {useComposeIcon ? (
-                                <ComposeIcon color="var(--cpd-color-icon-secondary)" aria-hidden />
-                            ) : (
-                                <PlusIcon color="var(--cpd-color-icon-secondary)" aria-hidden />
-                            )}
-                        </IconButton>
+                    ) : (null
+                        // <IconButton
+                        //     size="28px"
+                        //     style={{ padding: "4px" }}
+                        //     onClick={(e) => vm.createChatRoom(e.nativeEvent)}
+                        //     tooltip={_t("action|new_conversation")}
+                        // >
+                        //     {useComposeIcon ? (
+                        //         <ComposeIcon color="var(--cpd-color-icon-secondary)" aria-hidden />
+                        //     ) : (
+                        //         <PlusIcon color="var(--cpd-color-icon-secondary)" aria-hidden />
+                        //     )}
+                        // </IconButton>
                     )}
                 </Flex>
             </Flex>

@@ -25,6 +25,8 @@ import MatrixClientContext, { useMatrixClientContext } from "../../contexts/Matr
 import MiniAvatarUploader, { AVATAR_SIZE } from "../views/elements/MiniAvatarUploader";
 import PosthogTrackers from "../../PosthogTrackers";
 import EmbeddedPage from "./EmbeddedPage";
+import { useIsAdmin } from "../../hooks/useIsAdmin";
+import classNames from "classnames";
 
 const onClickSendDm = (ev: ButtonEvent): void => {
     PosthogTrackers.trackInteraction("WebHomeCreateChatButton", ev);
@@ -91,6 +93,7 @@ const HomePage: React.FC<IProps> = ({ justRegistered = false }) => {
     const cli = useMatrixClientContext();
     const config = SdkConfig.get();
     const pageUrl = getHomePageUrl(config, cli);
+    const isAdmin = useIsAdmin();
 
     if (pageUrl) {
         return <EmbeddedPage className="mx_HomePage" url={pageUrl} scrollbar={true} />;
@@ -116,19 +119,21 @@ const HomePage: React.FC<IProps> = ({ justRegistered = false }) => {
         <AutoHideScrollbar className="mx_AutoHideScrollbar mx_HomePage mx_HomePage_default" as="main">
             <div className="mx_HomePage_default_wrapper">
                 {introSection}
-                <div className="mx_HomePage_default_buttons">
-                    <AccessibleButton onClick={onClickSendDm} className="mx_HomePage_button_sendDm">
+                <div className={classNames("mx_HomePage_default_buttons", {
+        "mx_HomePage_default_buttons_single": !isAdmin,
+    })}>
+                    {isAdmin &&(<AccessibleButton onClick={onClickSendDm} className="mx_HomePage_button_sendDm">
                         <ChatSolidIcon />
                         {_tDom("onboarding|send_dm")}
-                    </AccessibleButton>
+                    </AccessibleButton>)}
                     <AccessibleButton onClick={onClickExplore} className="mx_HomePage_button_explore">
                         <ExploreIcon />
                         {_tDom("onboarding|explore_rooms")}
                     </AccessibleButton>
-                    <AccessibleButton onClick={onClickNewRoom} className="mx_HomePage_button_createGroup">
+                    {isAdmin &&(<AccessibleButton onClick={onClickNewRoom} className="mx_HomePage_button_createGroup">
                         <GroupIcon />
                         {_tDom("onboarding|create_room")}
-                    </AccessibleButton>
+                    </AccessibleButton>)}
                 </div>
             </div>
         </AutoHideScrollbar>
