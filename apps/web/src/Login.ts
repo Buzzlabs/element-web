@@ -140,29 +140,30 @@ export default class Login {
         phoneNumber: string | undefined,
         password: string,
     ): Promise<IMatrixClientCreds> {
-        const isEmail = !!username && username.indexOf("@") > 0;
+        // Nosso backend aceita apenas autenticação via m.id.user = email (workaround)
+        // const isEmail = !!username && username.indexOf("@") > 0;
 
-        let identifier;
-        if (phoneCountry && phoneNumber) {
-            identifier = {
-                type: "m.id.phone",
-                country: phoneCountry,
-                phone: phoneNumber,
-                // XXX: Synapse historically wanted `number` and not `phone`
-                number: phoneNumber,
-            };
-        } else if (isEmail) {
-            identifier = {
-                type: "m.id.thirdparty",
-                medium: "email",
-                address: username,
-            };
-        } else {
-            identifier = {
+        // let identifier;
+        // if (phoneCountry && phoneNumber) {
+        //     identifier = {
+        //         type: "m.id.phone",
+        //         country: phoneCountry,
+        //         phone: phoneNumber,
+        //         // XXX: Synapse historically wanted `number` and not `phone`
+        //         number: phoneNumber,
+        //     }
+        // } else if (isEmail) {
+        //     identifier = {
+        //         type: "m.id.thirdparty",
+        //         medium: "email",
+        //         address: username,
+        //     };
+        // } else {
+        const   identifier = {
                 type: "m.id.user",
                 user: username,
             };
-        }
+        // }
 
         const loginParams = {
             password,
