@@ -190,7 +190,7 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
             this.state.joinRule === JoinRule.Public
                 ? "public"
                 : "private";
-        opts.price = Number(this.state.price);
+        opts.price = Number(this.state.price) * 100;
         return opts;
     }
 
