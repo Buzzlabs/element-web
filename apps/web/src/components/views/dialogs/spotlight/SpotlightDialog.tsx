@@ -99,6 +99,7 @@ import { filterBoolean } from "../../../../utils/arrays";
 import { transformSearchTerm } from "../../../../utils/SearchInput";
 import { Filter } from "./Filter";
 import { useDiscoverRooms, type DiscoverRoom } from "../../../../hooks/useDiscoverRooms";
+import { useJoinByKeyword } from "../../../../hooks/useJoinByKeyword";
 
 const MAX_RECENT_SEARCHES = 10;
 const SECTION_LIMIT = 50; // only show 50 results per section for performance reasons
@@ -342,6 +343,7 @@ interface IDirectoryOpts {
 }
 
 const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = null, onFinished }) => {
+    const [payingRoom, setPayingRoom] = useState<DiscoverRoom | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const cli = MatrixClientPeg.safeGet();
@@ -386,6 +388,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
         error: publicRoomsError,
     } = usePublicRoomDirectory();
     const { loading: discoverLoading, rooms: discoverRooms, error: discoverError } = useDiscoverRooms();
+    const { joinByKeyword } = useJoinByKeyword();
     const { loading: peopleLoading, users: userDirectorySearchResults, search: searchPeople } = useUserDirectory();
     const { loading: profileLoading, profile, search: searchProfileInfo } = useProfileInfo();
     const searchParams: [IDirectoryOpts] = useMemo(
@@ -611,6 +614,19 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
         onFinished();
     };
 
+    const confirmPayment = async (): Promise<void> => {
+        if (!payingRoom) return;
+        try {
+            await joinByKeyword(payingRoom.keyword);
+            const roomId = payingRoom.room_id;
+            setPayingRoom(null);
+            viewRoom({ roomId }, true);
+        } catch {
+            // erro já logado dentro do hook; aqui só fechamos o modal
+            setPayingRoom(null);
+        }
+    };
+
     let otherSearchesSection: JSX.Element | undefined;
     if (trimmedQuery || (filter !== Filter.PublicRooms && filter !== Filter.PublicSpaces)) {
         otherSearchesSection = (
@@ -681,10 +697,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 const onAction = (ev: ButtonEvent): void => {
                     ev.stopPropagation();
                     if (isPaid) {
-                        // TODO: fluxo de pagamento ainda não implementado
-                        // por enquanto não faz nada além de um log
-                        // eslint-disable-next-line no-console
-                        console.log("Pagar room", room.room_id);
+                        setPayingRoom(room); // abre o popup de confirmação
                         return;
                     }
                     // sala livre: navega/junta na sala
@@ -1314,8 +1327,52 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
 
     const activeDescendant = rovingContext.state.activeNode?.id;
 
+    const paymentModal = payingRoom ? (
+        <div
+            style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.5)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 5000,
+            }}
+            onClick={() => setPayingRoom(null)}
+        >
+            <div
+                style={{
+                    background: "var(--cpd-color-bg-canvas-default, #fff)",
+                    color: "var(--cpd-color-text-primary, #000)",
+                    padding: "24px",
+                    borderRadius: "8px",
+                    minWidth: "280px",
+                    maxWidth: "90vw",
+                    boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
+                }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h3 style={{ marginTop: 0 }}>Confirmar pagamento?</h3>
+                <p>
+                    Sala: <strong>{payingRoom.name}</strong>
+                    <br />
+                    Valor: <strong>R$ {(payingRoom.price / 100).toFixed(2)}</strong>
+                </p>
+                <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "16px" }}>
+                    <AccessibleButton kind="secondary" onClick={() => setPayingRoom(null)}>
+                        Cancelar
+                    </AccessibleButton>
+                    <AccessibleButton kind="primary" onClick={confirmPayment}>
+                        Pagar
+                    </AccessibleButton>
+                </div>
+            </div>
+        </div>
+    ) : null;
+
     return (
         <>
+            {paymentModal}
             <div id="mx_SpotlightDialog_keyboardPrompt">
                 {_t(
                     "spotlight_dialog|keyboard_scroll_hint",
