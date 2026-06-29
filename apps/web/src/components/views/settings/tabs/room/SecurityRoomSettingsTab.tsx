@@ -43,6 +43,8 @@ import SdkConfig from "../../../../../SdkConfig";
 import { shouldForceDisableEncryption } from "../../../../../utils/crypto/shouldForceDisableEncryption";
 import { Caption } from "../../../typography/Caption";
 import { MEGOLM_ENCRYPTION_ALGORITHM } from "../../../../../utils/crypto";
+import { BusinessVisibilitySection } from "./BusinessVisibilitySection";
+
 
 interface IProps {
     room: Room;
@@ -578,6 +580,7 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
                             )}
                         </SettingsFieldset>
                         {this.renderJoinRule()}
+                        <BusinessVisibilitySection room={this.props.room} />
                         {historySection}
                     </SettingsSection>
                 </Form.Root>
