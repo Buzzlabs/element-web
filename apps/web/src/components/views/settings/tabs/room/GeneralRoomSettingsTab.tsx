@@ -20,6 +20,8 @@ import { SettingsSubsection } from "../../shared/SettingsSubsection";
 import SettingsTab from "../SettingsTab";
 import { SettingsSection } from "../../shared/SettingsSection";
 import { MediaPreviewAccountSettings } from "../user/MediaPreviewAccountSettings";
+import { DeleteRoomSection } from "./DeleteRoomSection";
+
 
 interface IProps {
     room: Room;
@@ -89,6 +91,10 @@ export default class GeneralRoomSettingsTab extends React.Component<IProps, ISta
                         <MediaPreviewAccountSettings roomId={room.roomId} />
                     </SettingsSubsection>
                     {leaveSection}
+                    <DeleteRoomSection
+                        roomId={room.roomId}
+                        onFinished={() => dis.dispatch({ action: "view_home_page" })}
+                    />
                 </SettingsSection>
             </SettingsTab>
         );
