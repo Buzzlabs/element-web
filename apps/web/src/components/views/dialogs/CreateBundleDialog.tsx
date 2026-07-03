@@ -1,13 +1,19 @@
 import React from "react";
-import { Form } from "@vector-im/compound-web";
+import { Form, IconButton, Text } from "@vector-im/compound-web";
+import CloseIcon from "@vector-im/compound-design-tokens/assets/web/icons/close";
 
 import Field from "../elements/Field";
 import DialogButtons from "../elements/DialogButtons";
 import BaseDialog from "../dialogs/BaseDialog";
-import Modal from "../../../Modal";
+import Spinner from "../elements/Spinner";
 import { MatrixClientPeg } from "../../../MatrixClientPeg";
-import { createBundle, updateBundle, type BundleRoom } from "../../../bundles/bundleApi";
-import BundleRoomPickerDialog from "./BundleRoomPickerDialog";
+import {
+    createBundle,
+    updateBundle,
+    discoverRooms,
+    type BundleRoom,
+    type DiscoverRoom,
+} from "../../../bundles/bundleApi";
 
 interface IProps {
     /** When set, the dialog edits this bundle instead of creating a new one. */
@@ -18,7 +24,10 @@ interface IProps {
     onFinished(proceed?: boolean): void;
 }
 
+type View = "form" | "rooms";
+
 interface IState {
+    view: View;
     name: string;
     price: string;
     rooms: BundleRoom[];
@@ -26,6 +35,10 @@ interface IState {
     error: string | null;
     nameError: string | null;
     priceError: string | null;
+    roomsLoading: boolean;
+    roomsError: string | null;
+    discovered: DiscoverRoom[];
+    tempSelected: Map<string, BundleRoom>;
 }
 
 /**
@@ -33,6 +46,10 @@ interface IState {
  * Synapse module. Mirrors {@link ../rooms/CreateRoomDialog} but targets
  * `/_synapse/bundles/create` (or `/update` when editing) instead of the
  * room creation API.
+ *
+ * The room picker is rendered as an internal "view" of this same dialog
+ * (rather than a second, nested Modal) so selecting rooms never loses
+ * the rest of the form state.
  */
 export default class CreateBundleDialog extends React.Component<IProps, IState> {
     private readonly isEdit: boolean;
@@ -41,6 +58,7 @@ export default class CreateBundleDialog extends React.Component<IProps, IState> 
         super(props);
         this.isEdit = Boolean(props.bundleId);
         this.state = {
+            view: "form",
             name: props.defaultName ?? "",
             // price is stored/edited in whole currency units in the UI; the API wants cents.
             price: props.defaultPrice != null ? (props.defaultPrice / 100).toString() : "",
@@ -49,6 +67,10 @@ export default class CreateBundleDialog extends React.Component<IProps, IState> 
             error: null,
             nameError: null,
             priceError: null,
+            roomsLoading: false,
+            roomsError: null,
+            discovered: [],
+            tempSelected: new Map(),
         };
     }
 
@@ -65,12 +87,51 @@ export default class CreateBundleDialog extends React.Component<IProps, IState> 
     };
 
     private openRoomPicker = (): void => {
-        Modal.createDialog(BundleRoomPickerDialog, {
-            initialSelectedRooms: this.state.rooms,
-        }).finished.then((args: unknown[]) => {
-            const rooms = args[0] as BundleRoom[] | undefined;
-            if (rooms) this.setState({ rooms });
+        this.setState({
+            view: "rooms",
+            tempSelected: new Map(this.state.rooms.map((r) => [r.room_id, r])),
+            roomsLoading: true,
+            roomsError: null,
         });
+
+        discoverRooms(MatrixClientPeg.safeGet())
+            .then((discovered) => {
+                this.setState({ discovered, roomsLoading: false });
+            })
+            .catch((e: Error) => {
+                this.setState({ roomsError: e.message, roomsLoading: false });
+            });
+    };
+
+    private toggleRoom = (room: BundleRoom): void => {
+        this.setState((state) => {
+            const next = new Map(state.tempSelected);
+            if (next.has(room.room_id)) {
+                next.delete(room.room_id);
+            } else {
+                next.set(room.room_id, room);
+            }
+            return { tempSelected: next };
+        });
+    };
+
+    private removeHiddenSelected = (roomId: string): void => {
+        this.setState((state) => {
+            const next = new Map(state.tempSelected);
+            next.delete(roomId);
+            return { tempSelected: next };
+        });
+    };
+
+    private confirmRoomPicker = (): void => {
+        this.setState((state) => ({
+            rooms: Array.from(state.tempSelected.values()),
+            view: "form",
+        }));
+    };
+
+    private cancelRoomPicker = (): void => {
+        this.setState({ view: "form" });
     };
 
     private validate(): boolean {
@@ -118,23 +179,13 @@ export default class CreateBundleDialog extends React.Component<IProps, IState> 
         this.props.onFinished(false);
     };
 
-    public render(): React.ReactNode {
+    private renderForm(): React.ReactNode {
         return (
-            <BaseDialog
-                className="mx_CreateBundleDialog"
-                onFinished={this.props.onFinished}
-                title={this.isEdit ? "Editar bundle" : "Criar bundle"}
-            >
+            <>
                 <div className="mx_Dialog_content">
                     <Form.Root onSubmit={(e) => e.preventDefault()}>
-                        <Field
-                            label="Nome do bundle"
-                            value={this.state.name}
-                            onChange={this.onNameChange}
-                        />
-                        {this.state.nameError && (
-                            <div className="mx_Field_error">{this.state.nameError}</div>
-                        )}
+                        <Field label="Nome do bundle" value={this.state.name} onChange={this.onNameChange} />
+                        {this.state.nameError && <div className="mx_Field_error">{this.state.nameError}</div>}
 
                         <Field
                             label="Preço"
@@ -142,9 +193,7 @@ export default class CreateBundleDialog extends React.Component<IProps, IState> 
                             onChange={this.onPriceChange}
                             className={this.state.priceError ? "mx_Field_invalid" : undefined}
                         />
-                        {this.state.priceError && (
-                            <div className="mx_Field_error">{this.state.priceError}</div>
-                        )}
+                        {this.state.priceError && <div className="mx_Field_error">{this.state.priceError}</div>}
 
                         <div className="mx_CreateBundleDialog_rooms">
                             <p>
@@ -166,7 +215,9 @@ export default class CreateBundleDialog extends React.Component<IProps, IState> 
                                 </div>
                             ))}
                             <button type="button" onClick={this.openRoomPicker}>
-                                + Adicionar salas
+                                {this.state.rooms.length > 0
+                                    ? `${this.state.rooms.length} sala(s) selecionada(s) — editar`
+                                    : "+ Adicionar salas"}
                             </button>
                         </div>
 
@@ -179,6 +230,79 @@ export default class CreateBundleDialog extends React.Component<IProps, IState> 
                     onPrimaryButtonClick={this.onOk}
                     onCancel={this.onCancel}
                 />
+            </>
+        );
+    }
+
+    private renderRoomPicker(): React.ReactNode {
+        const { discovered, tempSelected, roomsLoading, roomsError, rooms } = this.state;
+        const discoveredIds = new Set(discovered.map((r) => r.room_id));
+        const hiddenSelected = rooms.filter((r) => !discoveredIds.has(r.room_id) && tempSelected.has(r.room_id));
+
+        return (
+            <>
+                <div className="mx_Dialog_content">
+                    {roomsLoading && <Spinner />}
+                    {roomsError && <Text as="p">{roomsError}</Text>}
+                    {!roomsLoading && !roomsError && (
+                        <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                            {hiddenSelected.map((room) => (
+                                <div
+                                    key={room.room_id}
+                                    style={{ display: "flex", alignItems: "center", gap: "8px", padding: "4px 0" }}
+                                >
+                                    <Text as="span" style={{ flex: 1 }}>
+                                        {room.name} (indisponível)
+                                    </Text>
+                                    <IconButton size="24px" onClick={() => this.removeHiddenSelected(room.room_id)}>
+                                        <CloseIcon />
+                                    </IconButton>
+                                </div>
+                            ))}
+                            {discovered.map((room) => (
+                                <label
+                                    key={room.room_id}
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        padding: "4px 0",
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={tempSelected.has(room.room_id)}
+                                        onChange={() => this.toggleRoom(room)}
+                                    />
+                                    <span>{room.name}</span>
+                                </label>
+                            ))}
+                            {discovered.length === 0 && (
+                                <Text as="p">Nenhuma sala disponível para incluir no bundle.</Text>
+                            )}
+                        </div>
+                    )}
+                </div>
+                <DialogButtons
+                    primaryButton="Confirmar"
+                    onPrimaryButtonClick={this.confirmRoomPicker}
+                    onCancel={this.cancelRoomPicker}
+                    cancelButton="Voltar"
+                />
+            </>
+        );
+    }
+
+    public render(): React.ReactNode {
+        const isRoomsView = this.state.view === "rooms";
+        return (
+            <BaseDialog
+                className="mx_CreateBundleDialog"
+                onFinished={this.props.onFinished}
+                title={isRoomsView ? "Selecionar salas" : this.isEdit ? "Editar bundle" : "Criar bundle"}
+            >
+                {isRoomsView ? this.renderRoomPicker() : this.renderForm()}
             </BaseDialog>
         );
     }
