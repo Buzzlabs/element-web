@@ -100,6 +100,10 @@ export interface RoomListHeaderViewActions {
      */
     createBundle: (e: Event) => void;
     /**
+     * Open the bundle management list (create/edit/publish/delete)
+     */
+    manageBundles: (e: Event) => void;
+    /**
      * Create a video room
      */
     createVideoRoom: () => void;
