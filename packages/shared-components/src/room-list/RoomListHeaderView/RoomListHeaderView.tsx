@@ -47,6 +47,10 @@ export interface RoomListHeaderViewSnapshot {
      */
     canCreateRoom: boolean;
     /**
+     * Whether the user can create a bundle (paid group of rooms).
+     */
+    canCreateBundle: boolean;
+    /**
      * Whether the user can create video rooms
      */
     canCreateVideoRoom: boolean;
@@ -91,6 +95,10 @@ export interface RoomListHeaderViewActions {
      * Create a room
      */
     createRoom: (e: Event) => void;
+    /**
+     * Create a bundle (paid group of rooms)
+     */
+    createBundle: (e: Event) => void;
     /**
      * Create a video room
      */

@@ -33,6 +33,8 @@ import { SortingAlgorithm } from "../../stores/room-list-v3/skip-list/sorters";
 import { SettingLevel } from "../../settings/SettingLevel";
 import { createRoom, hasCreateRoomRights } from "./utils";
 import { isGlobalAdmin } from "../../utils/admin/isGlobalAdmin";
+import Modal from "../../Modal";
+import CreateBundleDialog from "../../components/views/dialogs/CreateBundleDialog";
 
 export interface Props {
     /**
@@ -152,6 +154,11 @@ export class RoomListHeaderViewModel
         if (!(await isGlobalAdmin())) return;
         createRoom(this.activeSpace);
         PosthogTrackers.trackInteraction("WebRoomListHeaderPlusMenuCreateRoomItem", e);
+    };
+
+    public createBundle = async (e: Event): Promise<void> => {
+        if (!(await isGlobalAdmin())) return;
+        Modal.createDialog(CreateBundleDialog, {});
     };
 
     public createVideoRoom = async (): Promise<void> => {
@@ -326,6 +333,7 @@ function computeHeaderSpaceState(
 
     const useComposeIcon = !isSectionFeatureEnabled;
     const canCreateSection = isSectionFeatureEnabled;
+    const canCreateBundle = isAdmin;
 
     return {
         title,
@@ -337,5 +345,6 @@ function computeHeaderSpaceState(
         canAccessSpaceSettings,
         canCreateSection,
         useComposeIcon,
+        canCreateBundle,
     };
 }
