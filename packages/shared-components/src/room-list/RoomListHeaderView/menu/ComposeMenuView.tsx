@@ -13,6 +13,9 @@ import ChatIcon from "@vector-im/compound-design-tokens/assets/web/icons/chat";
 import RoomIcon from "@vector-im/compound-design-tokens/assets/web/icons/room";
 import SectionIcon from "@vector-im/compound-design-tokens/assets/web/icons/section";
 import PlusIcon from "@vector-im/compound-design-tokens/assets/web/icons/plus";
+// TODO: troque por ícones dedicados se existirem na sua versão do compound-design-tokens.
+import BundleIcon from "@vector-im/compound-design-tokens/assets/web/icons/room";
+import ManageBundlesIcon from "@vector-im/compound-design-tokens/assets/web/icons/settings";
 
 import { type RoomListHeaderViewModel } from "../RoomListHeaderView";
 import { useI18n } from "../../../core/i18n/i18nContext";
@@ -62,7 +65,15 @@ export function ComposeMenuView({ vm }: ComposeMenuViewProps): JSX.Element {
                 <MenuItem Icon={RoomIcon} label={_t("action|new_room")} onSelect={vm.createRoom} hideChevron />
             )}
             {canCreateBundle && (
-                <MenuItem Icon={RoomIcon} label="Novo bundle" onSelect={vm.createBundle} hideChevron />
+                <MenuItem Icon={BundleIcon} label="Novo bundle" onSelect={vm.createBundle} hideChevron />
+            )}
+            {canCreateBundle && (
+                <MenuItem
+                    Icon={ManageBundlesIcon}
+                    label="Gerenciar bundles"
+                    onSelect={vm.manageBundles}
+                    hideChevron
+                />
             )}
             {canCreateVideoRoom && (
                 <MenuItem
