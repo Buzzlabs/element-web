@@ -32,7 +32,7 @@ import { FilterEnum } from "../../stores/room-list-v3/skip-list/filters";
 import { RoomNotificationStateStore } from "../../stores/notifications/RoomNotificationStateStore";
 import { RoomListItemViewModel } from "./RoomListItemViewModel";
 import { SdkContextClass } from "../../contexts/SDKContext";
-import { hasCreateRoomRights } from "./utils";
+import { isGlobalAdmin } from "../../utils/admin/isGlobalAdmin";
 import { keepIfSame } from "../../utils/keepIfSame";
 import { DefaultTagID } from "../../stores/room-list-v3/skip-list/tag";
 import { RoomListSectionHeaderViewModel } from "./RoomListSectionHeaderViewModel";
@@ -105,7 +105,9 @@ export class RoomListViewModel
 
         // Get initial rooms
         const roomsResult = RoomListStoreV3.instance.getSortedRoomsInActiveSpace(undefined);
-        const canCreateRoom = hasCreateRoomRights(props.client, activeSpace);
+        // Starts hidden; only global admins should see "Nova sala", and that
+        // check is async, so we patch canCreateRoom in once it resolves (see loadAdminStatus).
+        const canCreateRoom = false;
 
         // Remove favourite and low priority filters if sections are enabled, as they are redundant with the sections
         const areSectionsEnabled = SettingsStore.getValue("feature_room_list_sections");
@@ -135,6 +137,8 @@ export class RoomListViewModel
 
         this.roomsResult = roomsResult;
         this.sections = sections;
+
+        this.loadAdminStatus();
 
         // Build initial roomsMap from roomsResult
         this.updateRoomsMap(roomsResult);
@@ -180,6 +184,11 @@ export class RoomListViewModel
             }
             this.roomItemViewModels.clear();
         });
+    }
+
+    private async loadAdminStatus(): Promise<void> {
+        const canCreateRoom = await isGlobalAdmin();
+        this.snapshot.merge({ canCreateRoom });
     }
 
     public onToggleFilter = (filterId: FilterId): void => {
