@@ -7,8 +7,6 @@
 
 import React, { type JSX } from "react";
 import { IconButton, H1 } from "@vector-im/compound-web";
-import ComposeIcon from "@vector-im/compound-design-tokens/assets/web/icons/compose";
-import PlusIcon from "@vector-im/compound-design-tokens/assets/web/icons/plus";
 import { CollapseAllIcon, ExpandAllIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
 
 import { type ViewModel, useViewModel } from "../../core/viewmodel";
@@ -164,7 +162,7 @@ interface RoomListHeaderViewProps {
  */
 export function RoomListHeaderView({ vm }: Readonly<RoomListHeaderViewProps>): JSX.Element {
     const { translate: _t } = useI18n();
-    const { title, displaySpaceMenu, displayComposeMenu, useComposeIcon, collapseSections } = useViewModel(vm);
+    const { title, displaySpaceMenu, displayComposeMenu, collapseSections } = useViewModel(vm);
 
     return (
         <Flex
