@@ -144,6 +144,9 @@ import { EncryptionEventViewModel } from "../../viewmodels/room/timeline/event-t
 import { ModuleApi } from "../../modules/Api.ts";
 import { RoomUploadContextProvider } from "../../viewmodels/room/RoomUploadViewModel.tsx";
 import { EventPresentationContextProvider } from "../../utils/EventPresentationContextProvider";
+import { VodsDrawerBanner } from "../views/vods_drawer/VodsDrawerBanner";
+import { VodsDrawer, PEEK_HEIGHT } from "../views/vods_drawer/VodsDrawer";
+import { isVodsDrawerEnabled } from "../../vods/vodsDrawerConfig";
 
 const DEBUG = false;
 const PREVENT_MULTIPLE_JITSI_WITHIN = 30_000;
@@ -296,6 +299,7 @@ export interface IRoomState {
     promptAskToJoin: boolean;
 
     viewRoomOpts: ViewRoomOpts;
+    vodsDrawerOpen: boolean;
 }
 
 interface LocalRoomViewProps {
@@ -514,6 +518,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
             promptAskToJoin: false,
             viewRoomOpts: { buttons: [] },
             isRoomEncrypted: null,
+            vodsDrawerOpen: false,
         };
     }
 
@@ -2658,6 +2663,9 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
                     <RoomUploadContextProvider>
                         <Measured sensor={this.roomViewBody} onMeasurement={this.onMeasurement} />
                         {auxPanel}
+                        {isVodsDrawerEnabled(this.state.room?.roomId) && (
+                            <VodsDrawerBanner onOpen={() => this.setState({ vodsDrawerOpen: true })} />
+                        )}
                         {pinnedMessageBanner}
                         <main className={timelineClasses} data-testid="timeline">
                             <FileDropTarget parent={this.roomView.current} />
@@ -2669,6 +2677,15 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
                         {statusBarArea}
                         {previewBar}
                         {messageComposer}
+                        {isVodsDrawerEnabled(this.state.room?.roomId) && (
+                            <div style={{ height: `${PEEK_HEIGHT}px`, flexShrink: 0 }} />
+                        )}
+                        {isVodsDrawerEnabled(this.state.room?.roomId) && (
+                            <VodsDrawer
+                                open={this.state.vodsDrawerOpen}
+                                onOpenChange={(open) => this.setState({ vodsDrawerOpen: open })}
+                            />
+                        )}
                     </RoomUploadContextProvider>
                 );
                 break;
