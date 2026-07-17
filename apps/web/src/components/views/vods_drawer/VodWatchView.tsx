@@ -1,4 +1,5 @@
-import React, { useEffect, useState, type JSX } from "react";
+import React, { useEffect, useRef, useState, type JSX } from "react";
+import Hls from "hls.js"
 
 import { fetchVods, type LiveShow } from "../../../vods/vodsData";
 
@@ -21,12 +22,53 @@ interface VodWatchViewProps {
  * Fullscreen YouTube-style watch view: player on the left (title, channel
  * row and description below it), and a list of other VODs on the right.
  *
- * TODO (player): the mocked videoUrl is an .m3u8 (HLS) URL, which most
- * browsers can't play natively in a <video> tag. Once real URLs exist,
- * integrate hls.js here. For now the <video> element is rendered as-is.
+ * `videoUrl` is an .m3u8 (HLS) playlist served by Oracle Object Storage.
+ * Most browsers can't play it natively in a <video> tag, so hls.js drives
+ * playback. Safari plays HLS natively and is handled separately.
  */
 export function VodWatchView({ live, onClose, onSelectVod }: VodWatchViewProps): JSX.Element {
     const [related, setRelated] = useState<LiveShow[]>([]);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    const hlsRef = useRef<Hls | null>(null);
+    
+
+    useEffect(() => {
+        const video = videoRef.current;
+
+        if (!video || !live.videoUrl) return;
+
+        if (hlsRef.current) {
+            hlsRef.current.destroy();
+            hlsRef.current = null;
+        }
+
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hlsRef.current = hls;
+            hls.loadSource(live.videoUrl);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.ERROR, (_event, data) => {
+                console.error("hls.js:", data.fatal ? "FATAL" : "warn", data.type, data.details);
+            });
+
+            return () => {
+                hls.destroy();
+                if (hlsRef.current === hls) hlsRef.current = null;
+            };
+        }
+
+        // Fallback nativo (Safari/iOS, onde hls.js não é suportado).
+        if (video.canPlayType("application/vnd.apple.mpegurl")) {
+            video.src = live.videoUrl;
+            return () => {
+                video.removeAttribute("src");
+                video.load();
+            };
+        }
+
+        console.error("HLS não é suportado neste navegador.");
+    }, [live.id, live.videoUrl]);
 
     useEffect(() => {
         let cancelled = false;
@@ -35,8 +77,7 @@ export function VodWatchView({ live, onClose, onSelectVod }: VodWatchViewProps):
                 if (!cancelled) setRelated(lives.filter((item) => item.id !== live.id));
             })
             .catch((e) => {
-                // eslint-disable-next-line no-console
-                console.error("Erro ao buscar vídeos relacionados (mock):", e);
+                console.error("Erro ao buscar vídeos relacionados:", e);
             });
         return () => {
             cancelled = true;
@@ -105,8 +146,7 @@ export function VodWatchView({ live, onClose, onSelectVod }: VodWatchViewProps):
                     >
                         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                         <video
-                            key={live.id}
-                            src={live.videoUrl}
+                            ref={videoRef}
                             controls
                             autoPlay
                             poster={live.thumbnailUrl}
