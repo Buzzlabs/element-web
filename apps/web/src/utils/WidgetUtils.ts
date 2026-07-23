@@ -439,6 +439,21 @@ export default class WidgetUtils {
         return `${localpart}-${roomSlug}`.substring(0, 60).replace(/-+$/, "");
     }
 
+    /**
+     * Best-effort invite of the transcription bot when a Jitsi call starts,
+     * so it can later join the (private) room and post the transcript PR
+     * link. Never throws: a failed invite must not break call creation.
+     */
+    public static async maybeInviteScribeBot(client: MatrixClient, roomId: string): Promise<void> {
+        const botMxid = SdkConfig.get("jitsi_widget")?.scribe_bot_mxid;
+        if (!botMxid || botMxid === client.getUserId()) return;
+        try {
+            await client.invite(roomId, botMxid);
+        } catch (e) {
+            logger.warn(`Failed to invite scribe bot ${botMxid} to ${roomId}`, e);
+        }
+    }
+
     public static async addJitsiWidget(
         client: MatrixClient,
         roomId: string,
@@ -485,6 +500,8 @@ export default class WidgetUtils {
             domain,
             auth,
         });
+
+        await WidgetUtils.maybeInviteScribeBot(client, roomId);
     }
 
     public static makeAppConfig(
