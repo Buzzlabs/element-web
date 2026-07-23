@@ -42,3 +42,22 @@ describe("getLocalJitsiWrapperUrl", () => {
         );
     });
 });
+
+describe("deterministicJitsiConferenceId", () => {
+    it("builds <localpart>-<room-slug>", () => {
+        expect(
+            WidgetUtils.deterministicJitsiConferenceId("@matheus:matrix.buzzlabs.com.br", "Weekly Produto"),
+        ).toEqual("matheus-weekly-produto");
+    });
+
+    it("strips accents and symbols from the room name", () => {
+        expect(WidgetUtils.deterministicJitsiConferenceId("@ana:x.br", "Operação & Vendas!")).toEqual(
+            "ana-operacao-vendas",
+        );
+    });
+
+    it("returns null when there is no usable room name", () => {
+        expect(WidgetUtils.deterministicJitsiConferenceId("@ana:x.br", undefined)).toBeNull();
+        expect(WidgetUtils.deterministicJitsiConferenceId("@ana:x.br", "!!!")).toBeNull();
+    });
+});

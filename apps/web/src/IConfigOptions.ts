@@ -122,6 +122,7 @@ export interface IConfigOptions {
     };
     jitsi_widget?: {
         skip_built_in_welcome_screen?: boolean;
+        deterministic_conference_names?: boolean;
     };
     voip?: {
         obey_asserted_identity?: boolean; // MSC3086
