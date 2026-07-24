@@ -65,6 +65,21 @@ describe("deterministicJitsiConferenceId", () => {
     });
 });
 
+describe("jitsiWidgetAuth", () => {
+    afterEach(() => {
+        SdkConfig.reset();
+    });
+
+    it("prefers the config override over well-known discovery", async () => {
+        SdkConfig.put({ jitsi_widget: { auth: "buzzlabs-jwt" } });
+        await expect(WidgetUtils.jitsiWidgetAuth()).resolves.toEqual("buzzlabs-jwt");
+    });
+
+    it("falls back to Jitsi well-known auth without config", async () => {
+        await expect(WidgetUtils.jitsiWidgetAuth()).resolves.toBeUndefined();
+    });
+});
+
 describe("maybeInviteScribeBot", () => {
     afterEach(() => {
         SdkConfig.reset();
