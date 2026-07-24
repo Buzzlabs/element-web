@@ -7,7 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
+import { type MatrixClient } from "matrix-js-sdk/src/matrix";
+
 import WidgetUtils from "../../../src/utils/WidgetUtils";
+import SdkConfig from "../../../src/SdkConfig";
 import { mockPlatformPeg } from "../../test-utils";
 
 describe("getLocalJitsiWrapperUrl", () => {
@@ -40,5 +43,57 @@ describe("getLocalJitsiWrapperUrl", () => {
                 "&supportsScreensharing=true" +
                 "&language=$org.matrix.msc2873.client_language",
         );
+    });
+});
+
+describe("deterministicJitsiConferenceId", () => {
+    it("builds <localpart>-<room-slug>", () => {
+        expect(
+            WidgetUtils.deterministicJitsiConferenceId("@matheus:matrix.buzzlabs.com.br", "Weekly Produto"),
+        ).toEqual("matheus-weekly-produto");
+    });
+
+    it("strips accents and symbols from the room name", () => {
+        expect(WidgetUtils.deterministicJitsiConferenceId("@ana:x.br", "Operação & Vendas!")).toEqual(
+            "ana-operacao-vendas",
+        );
+    });
+
+    it("returns null when there is no usable room name", () => {
+        expect(WidgetUtils.deterministicJitsiConferenceId("@ana:x.br", undefined)).toBeNull();
+        expect(WidgetUtils.deterministicJitsiConferenceId("@ana:x.br", "!!!")).toBeNull();
+    });
+});
+
+describe("maybeInviteScribeBot", () => {
+    afterEach(() => {
+        SdkConfig.reset();
+    });
+
+    const mkClient = (): { invite: jest.Mock } & Pick<MatrixClient, "getUserId"> => ({
+        invite: jest.fn().mockResolvedValue({}),
+        getUserId: () => "@me:matrix.buzzlabs.com.br",
+    });
+
+    it("invites the configured bot", async () => {
+        SdkConfig.put({ jitsi_widget: { scribe_bot_mxid: "@scribe:matrix.buzzlabs.com.br" } });
+        const client = mkClient();
+        await WidgetUtils.maybeInviteScribeBot(client as unknown as MatrixClient, "!room:x");
+        expect(client.invite).toHaveBeenCalledWith("!room:x", "@scribe:matrix.buzzlabs.com.br");
+    });
+
+    it("does nothing without config", async () => {
+        const client = mkClient();
+        await WidgetUtils.maybeInviteScribeBot(client as unknown as MatrixClient, "!room:x");
+        expect(client.invite).not.toHaveBeenCalled();
+    });
+
+    it("swallows invite failures (already invited / no permission)", async () => {
+        SdkConfig.put({ jitsi_widget: { scribe_bot_mxid: "@scribe:matrix.buzzlabs.com.br" } });
+        const client = mkClient();
+        client.invite.mockRejectedValue(new Error("403"));
+        await expect(
+            WidgetUtils.maybeInviteScribeBot(client as unknown as MatrixClient, "!room:x"),
+        ).resolves.toBeUndefined();
     });
 });

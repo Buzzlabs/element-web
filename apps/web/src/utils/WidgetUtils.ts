@@ -418,6 +418,42 @@ export default class WidgetUtils {
         await client.setAccountData("m.widgets", userWidgets);
     }
 
+    /**
+     * Deterministic Jitsi conference name: `<localpart>-<room-slug>`.
+     * Keeps one stable conference per room and lets downstream tooling
+     * (call-scribe) infer the call owner from the conference name.
+     * Returns null when the room has no usable name (caller falls back
+     * to a random ID).
+     */
+    public static deterministicJitsiConferenceId(userId: string, roomName?: string): string | null {
+        const slugify = (s: string): string =>
+            s
+                .normalize("NFKD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-+|-+$/g, "");
+        const localpart = slugify(userId.split(":")[0]);
+        const roomSlug = roomName ? slugify(roomName) : "";
+        if (!localpart || !roomSlug) return null;
+        return `${localpart}-${roomSlug}`.substring(0, 60).replace(/-+$/, "");
+    }
+
+    /**
+     * Best-effort invite of the transcription bot when a Jitsi call starts,
+     * so it can later join the (private) room and post the transcript PR
+     * link. Never throws: a failed invite must not break call creation.
+     */
+    public static async maybeInviteScribeBot(client: MatrixClient, roomId: string): Promise<void> {
+        const botMxid = SdkConfig.get("jitsi_widget")?.scribe_bot_mxid;
+        if (!botMxid || botMxid === client.getUserId()) return;
+        try {
+            await client.invite(roomId, botMxid);
+        } catch (e) {
+            logger.warn(`Failed to invite scribe bot ${botMxid} to ${roomId}`, e);
+        }
+    }
+
     public static async addJitsiWidget(
         client: MatrixClient,
         roomId: string,
@@ -441,8 +477,14 @@ export default class WidgetUtils {
             // https://github.com/matrix-org/prosody-mod-auth-matrix-user-verification
             confId = base32.stringify(new TextEncoder().encode(roomId), { pad: false });
         } else {
-            // Create a random conference ID (capitalised so the name looks sensible in Jitsi)
-            confId = `Jitsi${capitalize(secureRandomStringFrom(24, LOWERCASE))}`;
+            const deterministic = SdkConfig.get("jitsi_widget")?.deterministic_conference_names
+                ? WidgetUtils.deterministicJitsiConferenceId(
+                      client.getSafeUserId(),
+                      oobRoomName ?? client.getRoom(roomId)?.name,
+                  )
+                : null;
+            // Fall back to a random conference ID (capitalised so the name looks sensible in Jitsi)
+            confId = deterministic ?? `Jitsi${capitalize(secureRandomStringFrom(24, LOWERCASE))}`;
         }
 
         // TODO: Remove URL hacks when the mobile clients eventually support v2 widgets
@@ -458,6 +500,8 @@ export default class WidgetUtils {
             domain,
             auth,
         });
+
+        await WidgetUtils.maybeInviteScribeBot(client, roomId);
     }
 
     public static makeAppConfig(
