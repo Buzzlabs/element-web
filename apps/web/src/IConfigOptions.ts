@@ -124,6 +124,8 @@ export interface IConfigOptions {
         skip_built_in_welcome_screen?: boolean;
         deterministic_conference_names?: boolean;
         scribe_bot_mxid?: string;
+        auth?: string;
+        jwt_minter_url?: string;
     };
     voip?: {
         obey_asserted_identity?: boolean; // MSC3086

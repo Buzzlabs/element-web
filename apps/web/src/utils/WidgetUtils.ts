@@ -440,6 +440,15 @@ export default class WidgetUtils {
     }
 
     /**
+     * Auth mode for new Jitsi widgets: an explicit config override
+     * (jitsi_widget.auth, e.g. our "buzzlabs-jwt" minter flow) wins over
+     * the domain's well-known discovery.
+     */
+    public static async jitsiWidgetAuth(): Promise<string | undefined> {
+        return SdkConfig.get("jitsi_widget")?.auth ?? (await Jitsi.getInstance().getJitsiAuth()) ?? undefined;
+    }
+
+    /**
      * Best-effort invite of the transcription bot when a Jitsi call starts,
      * so it can later join the (private) room and post the transcript PR
      * link. Never throws: a failed invite must not break call creation.
@@ -463,7 +472,7 @@ export default class WidgetUtils {
         oobRoomName?: string,
     ): Promise<void> {
         const domain = Jitsi.getInstance().preferredDomain;
-        const auth = (await Jitsi.getInstance().getJitsiAuth()) ?? undefined;
+        const auth = await WidgetUtils.jitsiWidgetAuth();
 
         // Must be globally unique, although predicatablity is not important, the js-sdk has functions to generate
         // secure ranom strings, and speed is not important here.
