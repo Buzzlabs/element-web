@@ -9,6 +9,14 @@
  * TODO: replace the events mock with the real backend call
  * (BACKEND_GET_EVENTS_URL) once available.
  */
+import { MatrixClientPeg } from "../MatrixClientPeg";
+
+/** Homeserver base URL, resolved from the logged-in client (same as bundleApi/room_service). */
+function getBaseUrl(): string {
+    const client = MatrixClientPeg.get();
+    if (!client) throw new Error("Matrix client não disponível");
+    return client.getHomeserverUrl();
+}
 
 export interface LiveShow {
     id: string;
@@ -57,11 +65,11 @@ interface VodServiceResponse {
 
 const MOCK_DELAY_MS = 300;
 
-/** Homeserver base URL. Same origin as Synapse in dev (see `vod_service` module). */
-const VOD_SERVICE_BASE_URL = "http://localhost:3000";
-const VOD_SERVICE_LIST_URL = `${VOD_SERVICE_BASE_URL}/_synapse/vod_service/list`;
-
-/** Which channel the drawer lists. Mocked while the backend doesn't provide it. */
+/**
+ * Which channel the drawer lists.
+ * TODO (multi-tenant): mover para config.json / resolver por tenant.
+ * Hoje fixo, igual ao `.where('channel_id', 4)` do AdonisJS original.
+ */
 const CHANNEL_ID = 4;
 
 /** How many VODs each page request asks for. */
@@ -121,7 +129,7 @@ function toLiveShow(item: VodServiceItem): LiveShow {
  * VOD list, paginated, from the `vod_service` Synapse module.
  */
 export async function fetchVods(page = 1): Promise<{ lives: LiveShow[]; lastPage: number }> {
-    const url = `${VOD_SERVICE_LIST_URL}?channel_id=${CHANNEL_ID}&page=${page}&limit=${PAGE_SIZE}`;
+    const url = `${getBaseUrl()}/_synapse/vod_service/list?channel_id=${CHANNEL_ID}&page=${page}&limit=${PAGE_SIZE}`;
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -143,9 +151,9 @@ export async function fetchEvents(): Promise<EventItem[]> {
     await delay(MOCK_DELAY_MS);
 
     const raw = [
-        { summary: "Live Especial", dateTime: "2026-02-15T20:00:00" },
-        { summary: "Podcast Semanal", dateTime: "2026-02-16T18:00:00" },
-        { summary: "Evento Presencial", dateTime: "2026-02-20T19:30:00" },
+        { summary: "Live Especial", dateTime: "2026-08-03T20:00:00" },
+        { summary: "Podcast Semanal", dateTime: "2026-08-16T18:00:00" },
+        { summary: "Evento Presencial", dateTime: "2026-08-20T19:30:00" },
     ];
 
     return raw.map((item) => ({
