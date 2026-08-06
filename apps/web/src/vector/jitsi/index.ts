@@ -65,6 +65,11 @@ interface ExternalAPIOptions extends _ExternalAPIOptions {
 }
 
 const JITSI_OPENIDTOKEN_JWT_AUTH = "openidtoken-jwt";
+// Buzzlabs: exchange the widget OpenID token for a signed JWT at our minter,
+// so internal users join as authenticated moderators (recording available)
+// without the Google SSO screen, which cannot render inside an iframe.
+// See Buzzlabs/Infra docs/superpowers/specs/2026-07-24-jitsi-jwt-minter-design.md
+const JITSI_BUZZLABS_JWT_AUTH = "buzzlabs-jwt";
 
 // Dev note: we use raw JS without many dependencies to reduce bundle size.
 // We do not need all of React to render a Jitsi conference.
@@ -88,6 +93,8 @@ let startWithVideoMuted: boolean | undefined;
 let isVideoChannel: boolean;
 let supportsScreensharing: boolean;
 let language: string;
+
+let jwtMinterUrl: string | undefined;
 
 let widgetApi: WidgetApi | undefined;
 let meetApi: _JitsiMeetExternalAPI | undefined;
@@ -149,7 +156,8 @@ const setupCompleted = (async (): Promise<string | void> => {
 
             // jitsi cannot work in a popup if auth token is provided because widgetApi is not available there
             // so check the token and request the 'requires_client' capability to hide the popup icon in the Element
-            if (qsParam("auth", true) === "openidtoken-jwt") {
+            const authParam = qsParam("auth", true);
+            if (authParam === JITSI_OPENIDTOKEN_JWT_AUTH || authParam === JITSI_BUZZLABS_JWT_AUTH) {
                 widgetApi.requestCapability(ElementWidgetCapabilities.RequiresClient);
             }
 
@@ -251,7 +259,9 @@ const setupCompleted = (async (): Promise<string | void> => {
         const instanceConfig = new SnakedObject<IConfigOptions>((await configPromise) ?? <IConfigOptions>{});
         const jitsiConfig = instanceConfig.get("jitsi_widget");
         if (jitsiConfig) {
-            skipOurWelcomeScreen = new SnakedObject(jitsiConfig).get("skip_built_in_welcome_screen") ?? false;
+            const snakedJitsiConfig = new SnakedObject(jitsiConfig);
+            skipOurWelcomeScreen = snakedJitsiConfig.get("skip_built_in_welcome_screen") ?? false;
+            jwtMinterUrl = snakedJitsiConfig.get("jwt_minter_url");
         }
 
         // Either reveal the prejoin screen, or skip straight to Jitsi depending on the config.
@@ -333,6 +343,39 @@ function createJWTToken(openIdToken: IOpenIDCredentials): string {
     return KJUR.jws.JWS.sign("HS256", JSON.stringify(header), JSON.stringify(payload), "notused");
 }
 
+/**
+ * Exchange the widget's OpenID token for a signed Jitsi JWT at our minter
+ * (see Buzzlabs/Infra spec 2026-07-24-jitsi-jwt-minter-design). Returns
+ * undefined on any failure so the user still joins as a guest instead of
+ * breaking the call.
+ */
+async function fetchBuzzlabsJwt(openIdToken: IOpenIDCredentials): Promise<string | undefined> {
+    if (!jwtMinterUrl) {
+        logger.warn("buzzlabs-jwt auth configured but no jwt_minter_url in config");
+        return undefined;
+    }
+    try {
+        const res = await fetch(jwtMinterUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                access_token: openIdToken.access_token,
+                matrix_server_name: openIdToken.matrix_server_name,
+                room: conferenceId,
+                name: displayName,
+            }),
+        });
+        if (!res.ok) {
+            logger.warn(`jwt-minter returned ${res.status}; joining as guest`);
+            return undefined;
+        }
+        return (await res.json()).jwt;
+    } catch (e) {
+        logger.warn("jwt-minter unreachable; joining as guest", e);
+        return undefined;
+    }
+}
+
 async function notifyHangup(errorMessage?: string): Promise<void> {
     if (widgetApi) {
         // We send the hangup event before setAlwaysOnScreen, because the latter
@@ -399,6 +442,13 @@ async function joinConference(audioInput?: string | null, videoInput?: string | 
             return;
         }
         jwt = createJWTToken(openIdToken);
+    } else if (jitsiAuth === JITSI_BUZZLABS_JWT_AUTH) {
+        const openIdToken = await widgetApi?.requestOpenIDConnectToken();
+        if (openIdToken?.access_token) {
+            jwt = await fetchBuzzlabsJwt(openIdToken);
+        } else {
+            logger.warn("No OpenID credential for buzzlabs-jwt auth; joining as guest");
+        }
     }
 
     switchVisibleContainers();
