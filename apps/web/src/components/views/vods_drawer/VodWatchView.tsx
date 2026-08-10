@@ -10,23 +10,14 @@ const CHANNEL_DESCRIPTION =
     "por enquanto é um texto fixo, igual ao restante dos dados mockados.";
 
 interface VodWatchViewProps {
-    /** The VOD being watched. */
+    /** Room the VOD belongs to (for fetching related VODs). */
+    roomId: string;
     live: LiveShow;
-    /** Closes the watch view, back to the chat/drawer. */
     onClose: () => void;
-    /** Switches to another VOD (clicking an item in the side list). */
     onSelectVod: (live: LiveShow) => void;
 }
 
-/**
- * Fullscreen YouTube-style watch view: player on the left (title, channel
- * row and description below it), and a list of other VODs on the right.
- *
- * `videoUrl` is an .m3u8 (HLS) playlist served by Oracle Object Storage.
- * Most browsers can't play it natively in a <video> tag, so hls.js drives
- * playback. Safari plays HLS natively and is handled separately.
- */
-export function VodWatchView({ live, onClose, onSelectVod }: VodWatchViewProps): JSX.Element {
+export function VodWatchView({ roomId, live, onClose, onSelectVod }: VodWatchViewProps): JSX.Element {
     const [related, setRelated] = useState<LiveShow[]>([]);
     const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -72,7 +63,7 @@ export function VodWatchView({ live, onClose, onSelectVod }: VodWatchViewProps):
 
     useEffect(() => {
         let cancelled = false;
-        fetchVods(1)
+        fetchVods(roomId, 1)
             .then(({ lives }) => {
                 if (!cancelled) setRelated(lives.filter((item) => item.id !== live.id));
             })
@@ -82,7 +73,7 @@ export function VodWatchView({ live, onClose, onSelectVod }: VodWatchViewProps):
         return () => {
             cancelled = true;
         };
-    }, [live.id]);
+    }, [live.id, roomId]);
 
     return (
         <div

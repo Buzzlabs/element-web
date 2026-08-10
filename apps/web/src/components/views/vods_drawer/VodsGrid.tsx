@@ -3,23 +3,18 @@ import React, { useCallback, useEffect, useState, type JSX } from "react";
 import { fetchVods, type LiveShow } from "../../../vods/vodsData";
 
 interface VodsGridProps {
+    /** Room whose VODs are listed. */
+    roomId: string;
     /** Section title, e.g. "Destaques", "Música". Empty string hides the header. */
     sectionTag: string;
-    /** Lowercase text filter applied to titles (client-side, same as Flutter). */
     filter?: string;
-    /** How many cards are visible initially. */
     initialVisibleCount: number;
-    /** How many more cards each "Mostrar mais" click reveals. */
     loadMoreCount: number;
-    /** Called when a VOD card is clicked. Falls back to opening the URL if omitted. */
     onSelectVod?: (live: LiveShow) => void;
 }
 
-/**
- * Grid of VOD cards with a "Mostrar mais" affordance.
- * Mirrors the FluffyChat `VodsWidget` + `LiveCard` (mocked data for now).
- */
 export function VodsGrid({
+    roomId,
     sectionTag,
     filter = "",
     initialVisibleCount,
@@ -32,19 +27,22 @@ export function VodsGrid({
     const [page, setPage] = useState(1);
     const [lastPage, setLastPage] = useState(1);
 
-    const loadPage = useCallback(async (pageToLoad: number, append: boolean): Promise<void> => {
-        setLoading(true);
-        try {
-            const { lives, lastPage: fetchedLastPage } = await fetchVods(pageToLoad);
-            setLastPage(fetchedLastPage);
-            setAllLives((current) => (append ? [...current, ...lives] : lives));
-        } catch (e) {
-            // eslint-disable-next-line no-console
-            console.error("Erro ao buscar vods (mock):", e);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const loadPage = useCallback(
+        async (pageToLoad: number, append: boolean): Promise<void> => {
+            setLoading(true);
+            try {
+                const { lives, lastPage: fetchedLastPage } = await fetchVods(roomId, pageToLoad);
+                setLastPage(fetchedLastPage);
+                setAllLives((current) => (append ? [...current, ...lives] : lives));
+            } catch (e) {
+                // eslint-disable-next-line no-console
+                console.error("Erro ao buscar vods:", e);
+            } finally {
+                setLoading(false);
+            }
+        },
+        [roomId],
+    );
 
     useEffect(() => {
         loadPage(1, false);

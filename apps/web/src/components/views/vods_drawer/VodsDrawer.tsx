@@ -18,26 +18,13 @@ const MAX_DESKTOP_HEIGHT = 600;
 const DRAG_THRESHOLD_PX = 5;
 
 interface VodsDrawerProps {
-    /** Whether the drawer is open (fully raised). */
+    /** Room whose VODs are shown. */
+    roomId: string;
     open: boolean;
-    /** Called when the drawer wants to change its open state (drag/handle click). */
     onOpenChange: (open: boolean) => void;
 }
 
-/**
- * Bottom-sheet drawer with the VODs grid on one side and the upcoming
- * events table on the other (tabs in compact mode).
- *
- * Responsiveness is driven by the size of the drawer's own CONTAINER
- * (the room body), measured via ResizeObserver — not by window size.
- * The room body is narrower than the window whenever the left/right
- * panels are open, so window-based breakpoints misjudge the space.
- *
- * Must be rendered inside a `position: relative` container covering the
- * room body. The composer is pushed above the closed peek by a
- * PEEK_HEIGHT spacer rendered by RoomView.
- */
-export function VodsDrawer({ open, onOpenChange }: VodsDrawerProps): JSX.Element {
+export function VodsDrawer({ roomId, open, onOpenChange }: VodsDrawerProps): JSX.Element {
     const rootRef = useRef<HTMLDivElement>(null);
     const [containerSize, setContainerSize] = useState({
         width: window.innerWidth,
@@ -153,6 +140,7 @@ export function VodsDrawer({ open, onOpenChange }: VodsDrawerProps): JSX.Element
                 <div style={{ ...sectionTitleStyle, margin: "0 0 16px 8px" }}>ROLOU POR AQUI</div>
                 <div style={{ overflowY: "auto", flex: 1, minHeight: 0, paddingRight: "4px" }}>
                     <VodsGrid
+                        roomId={roomId}
                         sectionTag="Destaques"
                         initialVisibleCount={6}
                         loadMoreCount={3}
@@ -160,6 +148,7 @@ export function VodsDrawer({ open, onOpenChange }: VodsDrawerProps): JSX.Element
                     />
                     <div style={{ height: "16px" }} />
                     <VodsGrid
+                        roomId={roomId}
                         sectionTag="Podcast"
                         filter="Podcast"
                         initialVisibleCount={3}
@@ -244,6 +233,7 @@ export function VodsDrawer({ open, onOpenChange }: VodsDrawerProps): JSX.Element
                 {selectedTab === "rolou" ? (
                     <>
                         <VodsGrid
+                            roomId={roomId}
                             sectionTag="Destaques"
                             initialVisibleCount={4}
                             loadMoreCount={2}
@@ -251,6 +241,7 @@ export function VodsDrawer({ open, onOpenChange }: VodsDrawerProps): JSX.Element
                         />
                         <div style={{ height: "16px" }} />
                         <VodsGrid
+                            roomId={roomId}
                             sectionTag="Podcast"
                             filter="Podcast"
                             initialVisibleCount={4}
@@ -291,7 +282,12 @@ export function VodsDrawer({ open, onOpenChange }: VodsDrawerProps): JSX.Element
             </div>
 
             {watchingVod && (
-                <VodWatchView live={watchingVod} onClose={() => setWatchingVod(null)} onSelectVod={setWatchingVod} />
+                <VodWatchView
+                    roomId={roomId}
+                    live={watchingVod}
+                    onClose={() => setWatchingVod(null)}
+                    onSelectVod={setWatchingVod}
+                />
             )}
         </>
     );

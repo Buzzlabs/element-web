@@ -4,7 +4,8 @@
  *
  * VODs now come from the `vod_service` Synapse module
  * (/_synapse/vod_service/list), which reads the `streams` table and builds
- * Oracle Object Storage playback URLs.
+ * Oracle Object Storage playback URLs. VODs belong to a room, so every fetch
+ * is scoped by roomId.
  *
  * TODO: replace the events mock with the real backend call
  * (BACKEND_GET_EVENTS_URL) once available.
@@ -39,7 +40,7 @@ export interface EventItem {
 interface VodServiceItem {
     id: number;
     streamId: string | null;
-    channelId: number;
+    roomId: string;
     title: string | null;
     categoryId: number | null;
     recordingPath: string;
@@ -64,13 +65,6 @@ interface VodServiceResponse {
 }
 
 const MOCK_DELAY_MS = 300;
-
-/**
- * Which channel the drawer lists.
- * TODO (multi-tenant): mover para config.json / resolver por tenant.
- * Hoje fixo, igual ao `.where('channel_id', 4)` do AdonisJS original.
- */
-const CHANNEL_ID = 4;
 
 /** How many VODs each page request asks for. */
 const PAGE_SIZE = 10;
@@ -126,10 +120,19 @@ function toLiveShow(item: VodServiceItem): LiveShow {
 }
 
 /**
- * VOD list, paginated, from the `vod_service` Synapse module.
+ * VOD list for a room, paginated, from the `vod_service` Synapse module.
  */
-export async function fetchVods(page = 1): Promise<{ lives: LiveShow[]; lastPage: number }> {
-    const url = `${getBaseUrl()}/_synapse/vod_service/list?channel_id=${CHANNEL_ID}&page=${page}&limit=${PAGE_SIZE}`;
+export async function fetchVods(
+    roomId: string,
+    page = 1,
+): Promise<{ lives: LiveShow[]; lastPage: number }> {
+    if (!roomId) {
+        throw new Error("fetchVods: roomId é obrigatório");
+    }
+
+    const url =
+        `${getBaseUrl()}/_synapse/vod_service/list` +
+        `?room_id=${encodeURIComponent(roomId)}&page=${page}&limit=${PAGE_SIZE}`;
 
     const response = await fetch(url);
     if (!response.ok) {

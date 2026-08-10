@@ -2682,6 +2682,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
                         )}
                         {isVodsDrawerEnabled(this.state.room?.roomId) && (
                             <VodsDrawer
+                                roomId={this.state.room.roomId}
                                 open={this.state.vodsDrawerOpen}
                                 onOpenChange={(open) => this.setState({ vodsDrawerOpen: open })}
                             />
