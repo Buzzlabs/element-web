@@ -44,6 +44,9 @@ import { shouldForceDisableEncryption } from "../../../../../utils/crypto/should
 import { Caption } from "../../../typography/Caption";
 import { MEGOLM_ENCRYPTION_ALGORITHM } from "../../../../../utils/crypto";
 import { BusinessVisibilitySection } from "./BusinessVisibilitySection";
+import { getRoomFeatures, setRoomFeature, ROOM_FEATURES } from "../../../../../utils/admin/roomFeatures";
+import ToggleSwitch from "../../../elements/ToggleSwitch";
+import defaultDispatcher from "../../../../../dispatcher/dispatcher";
 
 
 interface IProps {
@@ -58,6 +61,8 @@ interface IState {
     encrypted: boolean | null;
     stateEncrypted: boolean | null;
     showAdvancedSection: boolean;
+    roomFeatures: Record<string, boolean>;
+    featuresBusy: boolean;
 }
 
 export default class SecurityRoomSettingsTab extends React.Component<IProps, IState> {
@@ -84,11 +89,14 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
             encrypted: null, // async loaded in componentDidMount
             stateEncrypted: null, // async loaded in componentDidMount
             showAdvancedSection: false,
+            roomFeatures: {},
+            featuresBusy: false,
         };
     }
 
     public async componentDidMount(): Promise<void> {
         this.context.on(RoomStateEvent.Events, this.onStateEvent);
+        this.loadRoomFeatures();
 
         this.setState({
             hasAliases: await this.hasAliases(),
@@ -98,6 +106,31 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
             ),
         });
     }
+
+    private loadRoomFeatures = async (): Promise<void> => {
+        try {
+            const features = await getRoomFeatures(this.props.room.roomId);
+            this.setState({ roomFeatures: features });
+        } catch (e) {
+            logger.error("Falha ao carregar room features:", e);
+        }
+    };
+
+    private onFeatureToggle = async (feature: string, enabled: boolean): Promise<void> => {
+        this.setState((s) => ({ roomFeatures: { ...s.roomFeatures, [feature]: enabled }, featuresBusy: true }));
+        try {
+            await setRoomFeature(this.props.room.roomId, feature, enabled);
+            defaultDispatcher.dispatch({
+                action: "room_features_changed",
+                roomId: this.props.room.roomId,
+            });
+        } catch (e) {
+            logger.error("Falha ao alterar feature:", e);
+            this.setState((s) => ({ roomFeatures: { ...s.roomFeatures, [feature]: !enabled } }));
+        } finally {
+            this.setState({ featuresBusy: false });
+        }
+    };
 
     private pullContentPropertyFromEvent<T>(event: MatrixEvent | null | undefined, key: string, defaultValue: T): T {
         return event?.getContent()[key] || defaultValue;
@@ -518,6 +551,28 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
         const hasEncryptionPermission = room.currentState.mayClientSendStateEvent(EventType.RoomEncryption, client);
         const isEncryptionForceDisabled = shouldForceDisableEncryption(client);
         const canEnableEncryption = !isEncrypted && !isEncryptionForceDisabled && hasEncryptionPermission;
+        const featuresSection = (
+        <SettingsFieldset
+            legend={"Funcionalidades da sala"}
+            description={"Ative ou desative abas opcionais para esta sala."}
+        >
+            {ROOM_FEATURES.map(({ key, label }) => (
+                <div
+                    key={key}
+                    className="mx_SettingsFlag"
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}
+                >
+                    <span>{label}</span>
+                    <ToggleSwitch
+                        checked={!!this.state.roomFeatures[key]}
+                        disabled={this.state.featuresBusy}
+                        onChange={(checked) => this.onFeatureToggle(key, checked)}
+                        aria-label={label}
+                    />
+                </div>
+            ))}
+        </SettingsFieldset>
+    );
 
         let encryptionSettings: JSX.Element | undefined;
         if (
@@ -581,6 +636,7 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
                         </SettingsFieldset>
                         {this.renderJoinRule()}
                         <BusinessVisibilitySection room={this.props.room} />
+                        {featuresSection}
                         {historySection}
                     </SettingsSection>
                 </Form.Root>

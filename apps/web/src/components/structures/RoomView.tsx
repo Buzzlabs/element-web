@@ -146,7 +146,7 @@ import { RoomUploadContextProvider } from "../../viewmodels/room/RoomUploadViewM
 import { EventPresentationContextProvider } from "../../utils/EventPresentationContextProvider";
 import { VodsDrawerBanner } from "../views/vods_drawer/VodsDrawerBanner";
 import { VodsDrawer, PEEK_HEIGHT } from "../views/vods_drawer/VodsDrawer";
-import { isVodsDrawerEnabled } from "../../vods/vodsDrawerConfig";
+import { getRoomFeatures } from "../../utils/admin/roomFeatures";
 
 const DEBUG = false;
 const PREVENT_MULTIPLE_JITSI_WITHIN = 30_000;
@@ -300,6 +300,8 @@ export interface IRoomState {
 
     viewRoomOpts: ViewRoomOpts;
     vodsDrawerOpen: boolean;
+    vodsEnabled: boolean;
+    eventsEnabled: boolean;
 }
 
 interface LocalRoomViewProps {
@@ -519,6 +521,8 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
             viewRoomOpts: { buttons: [] },
             isRoomEncrypted: null,
             vodsDrawerOpen: false,
+            vodsEnabled: false,
+            eventsEnabled: false,
         };
     }
 
@@ -985,6 +989,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
             this.context.client.on(CryptoEvent.KeysChanged, this.onCrossSigningKeysChanged);
             this.context.client.on(MatrixEventEvent.Decrypted, this.onEventDecrypted);
         }
+        
         // Start listening for RoomViewStore updates
         this.roomViewStore.on(UPDATE_EVENT, this.onRoomViewStoreUpdate);
 
@@ -1039,6 +1044,20 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
         window.addEventListener("beforeunload", this.onPageUnload);
     }
 
+    private loadRoomFeatures = async (): Promise<void> => {
+    const roomId = this.state.room?.roomId;
+    if (!roomId) return;
+    try {
+        const features = await getRoomFeatures(roomId);
+        this.setState({
+            vodsEnabled: !!features["vods"],
+            eventsEnabled: !!features["events"],
+        });
+    } catch {
+        this.setState({ vodsEnabled: false, eventsEnabled: false });
+    }
+};
+
     public shouldComponentUpdate(nextProps: IRoomProps, nextState: IRoomState): boolean {
         const hasPropsDiff = objectHasDiff(this.props, nextProps);
 
@@ -1052,7 +1071,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
         return hasPropsDiff || hasStateDiff;
     }
 
-    public componentDidUpdate(): void {
+    public componentDidUpdate(prevProps: IRoomProps, prevState: IRoomState): void {
         // Note: We check the ref here with a flag because componentDidMount, despite
         // documentation, does not define our messagePanel ref. It looks like our spinner
         // in render() prevents the ref from being set on first mount, so we try and
@@ -1062,6 +1081,10 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
             this.setState({
                 atEndOfLiveTimeline: this.messagePanel.isAtEndOfLiveTimeline(),
             });
+        }
+        if (prevState.room?.roomId !== this.state.room?.roomId) {
+            this.setState({ vodsEnabled: false, eventsEnabled: false });
+            this.loadRoomFeatures();
         }
     }
 
@@ -1195,6 +1218,11 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
     private onAction = async (payload: ActionPayload): Promise<void> => {
         if (!this.context.client) return;
         switch (payload.action) {
+            case "room_features_changed":
+                if (payload.roomId === this.state.room?.roomId) {
+                    this.loadRoomFeatures();
+                }
+                break;
             case "message_sent":
                 this.checkDesktopNotifications();
                 break;
@@ -1495,6 +1523,8 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
         });
 
         defaultDispatcher.dispatch<ActionPayload>({ action: Action.RoomLoaded });
+
+        this.loadRoomFeatures();
     };
 
     private onRoomTimelineReset = (room?: Room): void => {
@@ -2655,6 +2685,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
 
         let mainSplitBody: JSX.Element | undefined;
         let mainSplitContentClassName: string | undefined;
+        const anyDrawerFeature = this.state.vodsEnabled || this.state.eventsEnabled;
         // Decide what to show in the main split
         switch (mainSplitContentType) {
             case MainSplitContentType.Timeline:
@@ -2663,7 +2694,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
                     <RoomUploadContextProvider>
                         <Measured sensor={this.roomViewBody} onMeasurement={this.onMeasurement} />
                         {auxPanel}
-                        {isVodsDrawerEnabled(this.state.room?.roomId) && (
+                        {anyDrawerFeature && (
                             <VodsDrawerBanner onOpen={() => this.setState({ vodsDrawerOpen: true })} />
                         )}
                         {pinnedMessageBanner}
@@ -2677,12 +2708,14 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
                         {statusBarArea}
                         {previewBar}
                         {messageComposer}
-                        {isVodsDrawerEnabled(this.state.room?.roomId) && (
+                        {anyDrawerFeature && (
                             <div style={{ height: `${PEEK_HEIGHT}px`, flexShrink: 0 }} />
                         )}
-                        {isVodsDrawerEnabled(this.state.room?.roomId) && (
+                        {anyDrawerFeature && (
                             <VodsDrawer
                                 roomId={this.state.room.roomId}
+                                showVods={this.state.vodsEnabled}
+                                showEvents={this.state.eventsEnabled}
                                 open={this.state.vodsDrawerOpen}
                                 onOpenChange={(open) => this.setState({ vodsDrawerOpen: open })}
                             />

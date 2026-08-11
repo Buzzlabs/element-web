@@ -20,11 +20,13 @@ const DRAG_THRESHOLD_PX = 5;
 interface VodsDrawerProps {
     /** Room whose VODs are shown. */
     roomId: string;
+    showVods: boolean;
+    showEvents: boolean;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }
 
-export function VodsDrawer({ roomId, open, onOpenChange }: VodsDrawerProps): JSX.Element {
+export function VodsDrawer({ roomId, showVods, showEvents, open, onOpenChange }: VodsDrawerProps): JSX.Element {
     const rootRef = useRef<HTMLDivElement>(null);
     const [containerSize, setContainerSize] = useState({
         width: window.innerWidth,
@@ -125,7 +127,7 @@ export function VodsDrawer({ roomId, open, onOpenChange }: VodsDrawerProps): JSX
         fontWeight: 700,
         color: "var(--cpd-color-text-primary, #1b1d22)",
     };
-
+    
     const wideBody = (
         <div
             style={{
@@ -136,50 +138,54 @@ export function VodsDrawer({ roomId, open, onOpenChange }: VodsDrawerProps): JSX
                 padding: "0 16px 16px",
             }}
         >
-            <div style={{ flex: "1 1 62%", display: "flex", flexDirection: "column", minWidth: 0 }}>
-                <div style={{ ...sectionTitleStyle, margin: "0 0 16px 8px" }}>ROLOU POR AQUI</div>
-                <div style={{ overflowY: "auto", flex: 1, minHeight: 0, paddingRight: "4px" }}>
-                    <VodsGrid
-                        roomId={roomId}
-                        sectionTag="Destaques"
-                        initialVisibleCount={6}
-                        loadMoreCount={3}
-                        onSelectVod={setWatchingVod}
-                    />
-                    <div style={{ height: "16px" }} />
-                    <VodsGrid
-                        roomId={roomId}
-                        sectionTag="Podcast"
-                        filter="Podcast"
-                        initialVisibleCount={3}
-                        loadMoreCount={3}
-                        onSelectVod={setWatchingVod}
-                    />
+            {showVods && (
+                <div style={{ flex: "1 1 62%", display: "flex", flexDirection: "column", minWidth: 0 }}>
+                    <div style={{ ...sectionTitleStyle, margin: "0 0 16px 8px" }}>ROLOU POR AQUI</div>
+                    <div style={{ overflowY: "auto", flex: 1, minHeight: 0, paddingRight: "4px" }}>
+                        <VodsGrid
+                            roomId={roomId}
+                            sectionTag="Destaques"
+                            initialVisibleCount={6}
+                            loadMoreCount={3}
+                            onSelectVod={setWatchingVod}
+                        />
+                        <div style={{ height: "16px" }} />
+                        <VodsGrid
+                            roomId={roomId}
+                            sectionTag="Podcast"
+                            filter="Podcast"
+                            initialVisibleCount={3}
+                            loadMoreCount={3}
+                            onSelectVod={setWatchingVod}
+                        />
+                    </div>
                 </div>
-            </div>
-            <div
-                style={{
-                    flex: "1 1 38%",
-                    display: "flex",
-                    flexDirection: "column",
-                    minWidth: "240px",
-                    maxWidth: "420px",
-                }}
-            >
+            )}
+            {showEvents && (
                 <div
                     style={{
-                        ...sectionTitleStyle,
-                        marginBottom: "16px",
-                        textAlign: "center",
-                        color: "var(--cpd-color-text-action-accent, #0dbd8b)",
+                        flex: "1 1 38%",
+                        display: "flex",
+                        flexDirection: "column",
+                        minWidth: "240px",
+                        maxWidth: "420px",
                     }}
                 >
-                    PRÓXIMOS EVENTOS
+                    <div
+                        style={{
+                            ...sectionTitleStyle,
+                            marginBottom: "16px",
+                            textAlign: "center",
+                            color: "var(--cpd-color-text-action-accent, #0dbd8b)",
+                        }}
+                    >
+                        PRÓXIMOS EVENTOS
+                    </div>
+                    <div style={{ flex: 1, minHeight: 0 }}>
+                        <EventsTable />
+                    </div>
                 </div>
-                <div style={{ flex: 1, minHeight: 0 }}>
-                    <EventsTable />
-                </div>
-            </div>
+            )}
         </div>
     );
 
@@ -210,6 +216,16 @@ export function VodsDrawer({ roomId, open, onOpenChange }: VodsDrawerProps): JSX
             </button>
         );
     };
+ 
+    // garante que selectedTab aponta pra uma aba habilitada
+    const effectiveTab = (() => {
+        if (selectedTab === "rolou" && showVods) return "rolou";
+        if (selectedTab === "eventos" && showEvents) return "eventos";
+        // aba atual indisponível: cai na primeira habilitada
+        if (showVods) return "rolou";
+        if (showEvents) return "eventos";
+        return selectedTab; // nenhuma habilitada (não deveria abrir o drawer)
+    })();
 
     const compactBody = (
         <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, padding: "0 12px 12px" }}>
@@ -225,12 +241,12 @@ export function VodsDrawer({ roomId, open, onOpenChange }: VodsDrawerProps): JSX
             >
                 {handleBar}
                 <div style={{ display: "flex" }}>
-                    {tabButton("Rolou por aqui", "rolou")}
-                    {tabButton("Eventos", "eventos")}
+                    {showVods && tabButton("Rolou por aqui", "rolou")}
+                    {showEvents && tabButton("Eventos", "eventos")}
                 </div>
             </div>
             <div style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
-                {selectedTab === "rolou" ? (
+                {showVods && effectiveTab === "rolou" && (
                     <>
                         <VodsGrid
                             roomId={roomId}
@@ -249,9 +265,8 @@ export function VodsDrawer({ roomId, open, onOpenChange }: VodsDrawerProps): JSX
                             onSelectVod={setWatchingVod}
                         />
                     </>
-                ) : (
-                    <EventsTable />
                 )}
+                {showEvents && effectiveTab === "eventos" && <EventsTable />}
             </div>
         </div>
     );
