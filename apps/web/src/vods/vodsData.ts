@@ -147,20 +147,16 @@ export async function fetchVods(
     };
 }
 
-/**
- * Mocked upcoming events. Mirrors the mock in the Flutter `EventsTable`.
- */
-export async function fetchEvents(): Promise<EventItem[]> {
-    await delay(MOCK_DELAY_MS);
-
-    const raw = [
-        { summary: "Live Especial", dateTime: "2026-08-03T20:00:00" },
-        { summary: "Podcast Semanal", dateTime: "2026-08-16T18:00:00" },
-        { summary: "Evento Presencial", dateTime: "2026-08-20T19:30:00" },
-    ];
-
-    return raw.map((item) => ({
-        summary: item.summary,
-        start: new Date(item.dateTime),
+export async function fetchEvents(roomId: string): Promise<EventItem[]> {
+    const res = await fetch(`${getBaseUrl()}/_synapse/schedule_service/list_events`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ room_id: roomId, limit: 6 }),
+    });
+    if (!res.ok) throw new Error(`schedule_service respondeu ${res.status}`);
+    const json = await res.json();
+    return json.items.map((e) => ({
+        summary: e.summary ?? "Evento",
+        start: new Date(e.start.dateTime ?? e.start.date),
     }));
 }

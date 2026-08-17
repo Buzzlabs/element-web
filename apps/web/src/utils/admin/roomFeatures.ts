@@ -69,3 +69,39 @@ export async function setRoomFeature(roomId: string, feature: string, enabled: b
         throw new Error((await readError(res)) ?? `room_features/set failed with status ${res.status}`);
     }
 }
+
+/* ----------------------------- Room calendar ----------------------------- */
+/**
+ * Which Google Calendar a room uses for its events (schedule_service module).
+ * Reading the id is cheap (no Google call); listing events is separate.
+ */
+
+/**
+ * Returns the calendar id configured for a room, or null if none is set.
+ */
+export async function getRoomCalendar(roomId: string): Promise<{ calendarId: string | null }> {
+    const res = await fetch(`${baseUrl()}/_synapse/schedule_service/get_calendar`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ room_id: roomId }),
+    });
+    if (!res.ok) {
+        throw new Error((await readError(res)) ?? `schedule_service/get_calendar failed with status ${res.status}`);
+    }
+    const body = await res.json();
+    return { calendarId: body?.calendarId ?? null };
+}
+
+/**
+ * Sets which Google Calendar a room uses. Admin only.
+ */
+export async function setRoomCalendar(roomId: string, calendarId: string): Promise<void> {
+    const res = await fetch(`${baseUrl()}/_synapse/schedule_service/set_calendar`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ room_id: roomId, calendar_id: calendarId }),
+    });
+    if (!res.ok) {
+        throw new Error((await readError(res)) ?? `schedule_service/set_calendar failed with status ${res.status}`);
+    }
+}

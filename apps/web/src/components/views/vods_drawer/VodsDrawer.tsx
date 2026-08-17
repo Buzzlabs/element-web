@@ -182,7 +182,7 @@ export function VodsDrawer({ roomId, showVods, showEvents, open, onOpenChange }:
                         PRÓXIMOS EVENTOS
                     </div>
                     <div style={{ flex: 1, minHeight: 0 }}>
-                        <EventsTable />
+                        <EventsTable roomId={roomId} />
                     </div>
                 </div>
             )}
@@ -266,7 +266,7 @@ export function VodsDrawer({ roomId, showVods, showEvents, open, onOpenChange }:
                         />
                     </>
                 )}
-                {showEvents && effectiveTab === "eventos" && <EventsTable />}
+                {showEvents && effectiveTab === "eventos" && <EventsTable roomId={roomId}/>}
             </div>
         </div>
     );

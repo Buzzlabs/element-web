@@ -20,31 +20,30 @@ function formatTime(eventDate: Date): string {
     return `${String(eventDate.getHours()).padStart(2, "0")}h`;
 }
 
-/**
- * Upcoming events table for the VODs drawer.
- * Mirrors the FluffyChat `EventsTable` widget (mocked data for now).
- */
-export function EventsTable(): JSX.Element {
+interface EventsTableProps {
+    roomId: string;
+}
+
+export function EventsTable({ roomId }: EventsTableProps): JSX.Element {
     const [events, setEvents] = useState<EventItem[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         let cancelled = false;
-        fetchEvents()
-            .then((fetched) => {
-                if (!cancelled) setEvents(fetched);
+        setLoading(true);
+        fetchEvents(roomId)
+            .then((evts) => {
+                if (!cancelled) setEvents(evts);
             })
             .catch((e) => {
-                // eslint-disable-next-line no-console
-                console.error("Erro ao buscar eventos (mock):", e);
+                console.error("Erro ao buscar eventos:", e);
+                if (!cancelled) setEvents([]);
             })
             .finally(() => {
                 if (!cancelled) setLoading(false);
             });
-        return () => {
-            cancelled = true;
-        };
-    }, []);
+        return () => { cancelled = true; };
+    }, [roomId]);
 
     if (loading) {
         return <div style={{ textAlign: "center", padding: "24px" }}>Carregando…</div>;
