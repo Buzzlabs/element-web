@@ -10,5 +10,4 @@ export enum Filter {
     People,
     PublicRooms,
     PublicSpaces,
-    Bundles,
 }
