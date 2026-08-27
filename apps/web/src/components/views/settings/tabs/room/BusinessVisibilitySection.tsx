@@ -165,7 +165,7 @@ export const BusinessVisibilitySection: React.FC<IProps> = ({ room }) => {
                 label="Preço do chat (R$)"
                 value={priceReais}
                 disabled={!priceEditable || saving}
-                onChange={(e) => setPriceReais(e.target.value)}
+                onChange={(e: { target: { value: React.SetStateAction<string>; }; }) => setPriceReais(e.target.value)}
                 min={0}
             />
             <div className="mx_SettingsTab_subsectionText">{helperText}</div>

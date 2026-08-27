@@ -102,6 +102,7 @@ import { useDiscoverRooms, type DiscoverRoom } from "../../../../hooks/useDiscov
 import { useJoinByKeyword } from "../../../../hooks/useJoinByKeyword";
 import { useDiscoverBundles } from "../../../../hooks/useDiscoverBundles";
 import { type Bundle, inviteBundle } from "../../../../bundles/bundleApi";
+import { inviteSpace } from "../../../../utils/admin/roomBusiness";
 
 const MAX_RECENT_SEARCHES = 10;
 const SECTION_LIMIT = 50; // only show 50 results per section for performance reasons
@@ -373,6 +374,7 @@ interface IDirectoryOpts {
 
 const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = null, onFinished }) => {
     const [payingRoom, setPayingRoom] = useState<DiscoverRoom | null>(null);
+    const [payingSpace, setPayingSpace] = useState<DiscoverRoom | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const [payingBundle, setPayingBundle] = useState<Bundle | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -682,6 +684,31 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
         }
     };
 
+    const confirmSpacePayment = async (): Promise<void> => {
+        if (!payingSpace) return;
+        try {
+            const spaceId = payingSpace.room_id;
+            const joinedRooms = await inviteSpace(spaceId);  // backend já colocou você nelas
+            setPayingSpace(null);
+
+            const cli = MatrixClientPeg.safeGet();
+
+            // faz o CLIENTE reconhecer as salas (você já é membro, então é rápido
+            // e não dá 403). Isso dispara a atualização da lista lateral.
+            await Promise.all(
+                [spaceId, ...joinedRooms].map((roomId) =>
+                    cli.joinRoom(roomId).catch(() => {
+                        // já é membro / erro benigno — ignora
+                    }),
+                ),
+            );
+
+            viewRoom({ roomId: spaceId }, true);
+        } catch {
+            setPayingSpace(null);
+        }
+    };
+
     const confirmBundlePayment = async (): Promise<void> => {
         if (!payingBundle) return;
         try {
@@ -766,6 +793,55 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
     if (trimmedQuery || filter !== null) {
         const resultMapper = (result: Result): JSX.Element => {
             if (isDiscoverRoomResult(result)) {
+                // SPACE tem tratamento próprio (compra via inviteSpace).
+                // Precisa vir antes da lógica de sala, senão o space cai aqui.
+                if (result.discoverRoom.room_kind === "space") {
+                    const space = result.discoverRoom;
+                    const isPaid = Number(space.price) > 0;
+                    const buttonLabel = isPaid ? "Pagar" : "Entrar";
+
+                    const onAction = async (ev: ButtonEvent): Promise<void> => {
+                        ev.stopPropagation();
+                        if (isPaid) {
+                            setPayingSpace(space);
+                            return;
+                        }
+                        // grátis: entra em todas as salas do space (igual o pago, sem cobrança)
+                        try {
+                            const spaceId = space.room_id;
+                            const joinedRooms = await inviteSpace(spaceId);
+                            const cli = MatrixClientPeg.safeGet();
+                            await Promise.all(
+                                [spaceId, ...joinedRooms].map((roomId) =>
+                                    cli.joinRoom(roomId).catch(() => {}),
+                                ),
+                            );
+                            viewRoom({ roomId: spaceId }, true, ev.type !== "click");
+                        } catch {
+                            // erro já logado no inviteSpace
+                        }
+                    };
+
+                    return (
+                        <Option
+                            id={`mx_SpotlightDialog_button_result_${space.room_id}`}
+                            className="mx_SpotlightDialog_result_multiline"
+                            key={`${Section[result.section]}-${space.room_id}`}
+                            onClick={onAction}
+                            endAdornment={
+                                <AccessibleButton
+                                    kind={isPaid ? "primary" : "primary_outline"}
+                                    onClick={onAction}
+                                    tabIndex={-1}
+                                >
+                                    {buttonLabel}
+                                </AccessibleButton>
+                            }
+                        >
+                            {space.name}
+                        </Option>
+                    );
+                }
                 const room = result.discoverRoom;
                 const isPaid = Number(room.price) > 0;
                 const buttonLabel = isPaid ? 
@@ -1517,6 +1593,51 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
 
     const activeDescendant = rovingContext.state.activeNode?.id;
 
+    const spacePaymentModal = payingSpace ? (
+        <div
+            style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.5)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 5000,
+            }}
+            onClick={() => setPayingSpace(null)}
+        >
+            <div
+                style={{
+                    background: "var(--cpd-color-bg-canvas-default, #fff)",
+                    color: "var(--cpd-color-text-primary, #000)",
+                    padding: "24px",
+                    borderRadius: "8px",
+                    minWidth: "280px",
+                    maxWidth: "90vw",
+                    boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
+                }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h3 style={{ marginTop: 0 }}>Confirmar pagamento?</h3>
+                <p>
+                    Espaço: <strong>{payingSpace.name}</strong>
+                    <br />
+                    Acesso a todas as salas incluídas
+                    <br />
+                    Valor: <strong>R$ {(payingSpace.price / 100).toFixed(2)}</strong>
+                </p>
+                <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "16px" }}>
+                    <AccessibleButton kind="secondary" onClick={() => setPayingSpace(null)}>
+                        Cancelar
+                    </AccessibleButton>
+                    <AccessibleButton kind="primary" onClick={confirmSpacePayment}>
+                        Pagar
+                    </AccessibleButton>
+                </div>
+            </div>
+        </div>
+    ) : null;
+
     const paymentModal = payingRoom ? (
         <div
             style={{
@@ -1609,6 +1730,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
         <>
             {paymentModal}
             {bundlePaymentModal}
+            {spacePaymentModal}
             <div id="mx_SpotlightDialog_keyboardPrompt">
                 {_t(
                     "spotlight_dialog|keyboard_scroll_hint",

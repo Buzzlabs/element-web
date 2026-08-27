@@ -56,13 +56,16 @@ export const createSpace = async (
     alias?: string,
     topic?: string,
     avatar?: string | File,
+    priceCents: number = 0, 
     createOpts: Partial<ICreateRoomOpts> = {},
     otherOpts: Partial<Omit<ICreateOpts, "createOpts">> = {},
 ): Promise<string | null> => {
-    const derivedKeyword =
+        const derivedKeyword =
         alias && alias.includes(":")
             ? alias.substring(1, alias.indexOf(":"))
             : nameToLocalpart(name);
+
+    const isPaid = priceCents > 0;  
  
     return createRoom(client, {
         name,
@@ -85,8 +88,8 @@ export const createSpace = async (
         roomType: RoomType.Space,
         useModuleCreation: true,
         visible: isPublic,
-        access_type: "public",
-        price: 0,
+        access_type: isPaid ? "private" : "public",  
+        price: priceCents,              
         keyword: derivedKeyword,
         historyVisibility: isPublic ? HistoryVisibility.WorldReadable : HistoryVisibility.Invited,
         spinner: false,
@@ -123,6 +126,8 @@ interface ISpaceCreateFormProps extends BProps {
     aliasFieldRef: RefObject<RoomAliasField | null>;
     showAliasField?: boolean;
     children?: ReactNode;
+    priceReais: string;
+    setPriceReais(this: void, value: string): void;
     onSubmit(this: void, e: SyntheticEvent): void;
     setAlias(this: void, alias: string): void;
 }
@@ -141,7 +146,9 @@ export const SpaceCreateForm: React.FC<ISpaceCreateFormProps> = ({
     showAliasField,
     topic,
     setTopic,
-    children,
+    priceReais,       
+    setPriceReais, 
+    children,        
 }) => {
     const cli = useContext(MatrixClientContext);
     const domain = cli.getDomain() ?? undefined;
@@ -201,7 +208,17 @@ export const SpaceCreateForm: React.FC<ISpaceCreateFormProps> = ({
                 rows={3}
                 disabled={busy}
             />
-
+            <Field
+                name="spacePrice"
+                type="number"
+                label={"Preço (R$) — deixe 0 para grátis"}
+                value={priceReais}
+                min={0}
+                step={0.01}
+                onChange={(ev: ChangeEvent<HTMLInputElement>) => setPriceReais(ev.target.value)}
+                disabled={busy}
+                autoComplete="off"
+            />
             {children}
         </form>
     );
@@ -215,6 +232,7 @@ const SpaceCreateMenu: React.FC<{
     const [visibility, setVisibility] = useState<Visibility | null>(
         settingAllowPublicSpaces === false ? Visibility.Private : null,
     );
+    const [priceReais, setPriceReais] = useState<string>("0");
     const [busy, setBusy] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -262,7 +280,20 @@ const SpaceCreateMenu: React.FC<{
 
         try {
             setError(null);
-            await createSpace(cli, name, visibility === Visibility.Public, alias, topic, avatar);
+            const parsedReais = Number(String(priceReais).replace(",", "."));
+            const priceCents = Number.isFinite(parsedReais) && parsedReais > 0
+                ? Math.round(parsedReais * 100)
+                : 0;
+
+            await createSpace(
+                cli,
+                name,
+                visibility === Visibility.Public,
+                alias,
+                topic,
+                avatar,
+                priceCents,         
+            );
             onFinished();
         } catch (e: any) {
             logger.error(e);
@@ -348,6 +379,8 @@ const SpaceCreateMenu: React.FC<{
                     nameFieldRef={spaceNameField}
                     topic={topic}
                     setTopic={setTopic}
+                    priceReais={priceReais}
+                    setPriceReais={setPriceReais}
                     alias={alias}
                     setAlias={setAlias}
                     showAliasField={visibility === Visibility.Public}
