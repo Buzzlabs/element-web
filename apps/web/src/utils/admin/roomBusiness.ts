@@ -97,29 +97,20 @@ export async function inviteSpace(spaceId: string): Promise<string[]> {
     return res.json();
 }
 
-export async function getSpaceChildRooms(
-    client: MatrixClient,
-    spaceId: string,
-): Promise<SpaceChildRoom[]> {
-    try {
-        // getRoomHierarchy(roomId, limit, maxDepth). maxDepth=1 = só os filhos
-        // diretos (não desce em sub-spaces). Ajuste se quiser aninhados.
-        const res = await client.getRoomHierarchy(spaceId, 50, 1);
- 
-        const rooms = res.rooms ?? [];
-        return rooms
-            // remove o próprio space da lista (ele vem como primeiro item)
-            .filter((r) => r.room_id !== spaceId)
-            .map((r) => ({
-                roomId: r.room_id,
-                name: r.name,
-                topic: r.topic,
-                numJoinedMembers: r.num_joined_members,
-                roomType: r.room_type,
-            }));
-    } catch (e) {
-        // eslint-disable-next-line no-console
-        console.error("getSpaceChildRooms: failed for space", spaceId, e);
-        return [];
+export async function getSpaceChildRooms(p0: MatrixClient, spaceId: string): Promise<SpaceChildRoom[]> {
+    const res = await fetch(`${baseUrl()}/_synapse/room_service/space_children`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ space_id: spaceId }),
+    });
+    if (!res.ok) {
+        throw new Error((await readError(res)) ?? `space_children failed with status ${res.status}`);
     }
+    const body = await res.json();
+    const rooms = Array.isArray(body?.rooms) ? body.rooms : [];
+    return rooms.map((r: any) => ({
+        roomId: r.room_id,
+        name: r.name,
+        numJoinedMembers: r.member_count,
+    }));
 }

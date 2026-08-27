@@ -103,6 +103,7 @@ import { useJoinByKeyword } from "../../../../hooks/useJoinByKeyword";
 import { useDiscoverBundles } from "../../../../hooks/useDiscoverBundles";
 import { type Bundle, inviteBundle } from "../../../../bundles/bundleApi";
 import { inviteSpace } from "../../../../utils/admin/roomBusiness";
+import { getSpaceChildRooms, type SpaceChildRoom } from "../../../../utils/admin/roomBusiness";
 
 const MAX_RECENT_SEARCHES = 10;
 const SECTION_LIMIT = 50; // only show 50 results per section for performance reasons
@@ -376,6 +377,9 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
     const [payingRoom, setPayingRoom] = useState<DiscoverRoom | null>(null);
     const [payingSpace, setPayingSpace] = useState<DiscoverRoom | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const [detailsSpace, setDetailsSpace] = useState<DiscoverRoom | null>(null);
+    const [detailsRooms, setDetailsRooms] = useState<SpaceChildRoom[]>([]);
+    const [detailsLoading, setDetailsLoading] = useState(false);
     const [payingBundle, setPayingBundle] = useState<Bundle | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const cli = MatrixClientPeg.safeGet();
@@ -684,6 +688,20 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
         }
     };
 
+    const openSpaceDetails = async (space: DiscoverRoom): Promise<void> => {
+        setDetailsSpace(space);
+        setDetailsRooms([]);
+        setDetailsLoading(true);
+        try {
+            const rooms = await getSpaceChildRooms(MatrixClientPeg.safeGet(), space.room_id);
+            setDetailsRooms(rooms);
+        } catch {
+            setDetailsRooms([]);
+        } finally {
+            setDetailsLoading(false);
+        }
+    };
+
     const confirmSpacePayment = async (): Promise<void> => {
         if (!payingSpace) return;
         try {
@@ -838,7 +856,26 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                                 </AccessibleButton>
                             }
                         >
-                            {space.name}
+                            <div className="mx_SpotlightDialog_result_multiline_text">
+                            <span className="mx_SpotlightDialog_result_multiline_name">{space.name}</span>
+                            <div className="mx_SpotlightDialog_result_details">
+                                {isPaid ? `R$ ${(space.price / 100).toFixed(2)}` : "Grátis"}
+                                {" · "}
+                                <AccessibleButton
+                                kind="link"
+                                onClick={(ev: ButtonEvent) => {
+                                    ev.stopPropagation();
+                                    openSpaceDetails(space);
+                                }}
+                                tabIndex={-1}
+                                style={{ color: "inherit", 
+                                fontWeight: "normal",textDecoration: "underline" }}
+                            >
+                                Ver salas
+                            </AccessibleButton>
+                            </div>
+                        </div>
+
                         </Option>
                     );
                 }
@@ -1593,6 +1630,69 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
 
     const activeDescendant = rovingContext.state.activeNode?.id;
 
+    const spaceDetailsModal = detailsSpace ? (
+        <div
+            style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.5)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 5000,
+            }}
+            onClick={() => setDetailsSpace(null)}
+        >
+            <div
+                style={{
+                    background: "var(--cpd-color-bg-canvas-default, #fff)",
+                    color: "var(--cpd-color-text-primary, #000)",
+                    padding: "24px",
+                    borderRadius: "8px",
+                    minWidth: "320px",
+                    maxWidth: "90vw",
+                    maxHeight: "70vh",
+                    overflowY: "auto",
+                    boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
+                }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h3 style={{ marginTop: 0 }}>Salas em {detailsSpace.name}</h3>
+
+                {detailsLoading ? (
+                    <p>Carregando…</p>
+                ) : detailsRooms.length === 0 ? (
+                    <p>Nenhuma sala encontrada neste espaço.</p>
+                ) : (
+                    <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                        {detailsRooms.map((r) => (
+                            <li
+                                key={r.roomId}
+                                style={{
+                                    padding: "8px 0",
+                                    borderBottom: "1px solid var(--cpd-color-bg-subtle-secondary, #eee)",
+                                }}
+                            >
+                                <strong>{r.name ?? r.roomId}</strong>
+                                {typeof r.numJoinedMembers === "number" && (
+                                    <span style={{ opacity: 0.7 }}>
+                                        {" "}· {r.numJoinedMembers} integrante(s)
+                                    </span>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+                    <AccessibleButton kind="primary" onClick={() => setDetailsSpace(null)}>
+                        Fechar
+                    </AccessibleButton>
+                </div>
+            </div>
+        </div>
+    ) : null;
+
     const spacePaymentModal = payingSpace ? (
         <div
             style={{
@@ -1731,6 +1831,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
             {paymentModal}
             {bundlePaymentModal}
             {spacePaymentModal}
+            {spaceDetailsModal}
             <div id="mx_SpotlightDialog_keyboardPrompt">
                 {_t(
                     "spotlight_dialog|keyboard_scroll_hint",
