@@ -46,6 +46,8 @@ import { UIComponent } from "../../../settings/UIFeature";
 import { isKnockDenied } from "../../../utils/membership";
 import SettingsStore from "../../../settings/SettingsStore";
 import { getNotificationIcon } from "../dialogs/spotlight/RoomResultContextMenus.tsx";
+import { getLiveWidget } from "../../../utils/live/liveWidget";
+import { RoomStateEvent, type MatrixEvent } from "matrix-js-sdk/src/matrix";
 
 interface Props {
     room: Room;
@@ -79,6 +81,15 @@ class RoomTile extends React.PureComponent<Props, State> {
     private roomTileRef = createRef<HTMLDivElement>();
     private notificationState: NotificationState;
     private roomProps: RoomEchoChamber;
+    private get isLive(): boolean {
+        return !!getLiveWidget(MatrixClientPeg.safeGet(), this.props.room.roomId);
+    }
+
+    private onRoomStateForLive = (event: MatrixEvent): void => {
+        if (event.getRoomId() !== this.props.room.roomId) return;
+        this.forceUpdate();
+    };
+
 
     public constructor(props: Props) {
         super(props);
@@ -94,6 +105,8 @@ class RoomTile extends React.PureComponent<Props, State> {
 
         this.notificationState = RoomNotificationStateStore.instance.getRoomState(this.props.room);
         this.roomProps = EchoChamber.forRoom(this.props.room);
+
+        MatrixClientPeg.safeGet().on(RoomStateEvent.Events, this.onRoomStateForLive);
     }
 
     private onRoomNameUpdate = (room: Room): void => {
@@ -175,6 +188,7 @@ class RoomTile extends React.PureComponent<Props, State> {
         this.props.room.off(RoomEvent.Name, this.onRoomNameUpdate);
         defaultDispatcher.unregister(this.dispatcherRef);
         this.notificationState.off(NotificationStateEvents.Update, this.onNotificationUpdate);
+        MatrixClientPeg.safeGet().off(RoomStateEvent.Events, this.onRoomStateForLive);
         this.roomProps.off(PROPERTY_UPDATED, this.onRoomPropertyUpdate);
         CallStore.instance.off(CallStoreEvent.Call, this.onCallChanged);
     }
@@ -372,6 +386,7 @@ class RoomTile extends React.PureComponent<Props, State> {
     }
 
     public render(): React.ReactElement {
+        console.log("RoomTile renderizando", this.props.room.name, "isLive:", this.isLive);
         const classes = classNames({
             mx_RoomTile: true,
             mx_RoomTile_sticky:
@@ -411,10 +426,42 @@ class RoomTile extends React.PureComponent<Props, State> {
             mx_RoomTile_titleHasUnreadEvents: this.notificationState.isUnread,
         });
 
+        const liveChip = this.isLive ? (
+            <span
+                className="mx_RoomTile_liveChip"
+                aria-hidden="true"
+                style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    marginLeft: "6px",
+                    padding: "1px 6px",
+                    borderRadius: "4px",
+                    background: "var(--cpd-color-bg-critical-primary, #d00)",
+                    color: "#fff",
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    letterSpacing: "0.02em",
+                    verticalAlign: "middle",
+                }}
+            >
+                <span
+                    style={{
+                        width: "6px",
+                        height: "6px",
+                        borderRadius: "50%",
+                        background: "#fff",
+                    }}
+                />
+                AO VIVO
+            </span>
+        ) : null;
+
         const titleContainer = this.props.isMinimized ? null : (
             <div className="mx_RoomTile_titleContainer">
                 <div title={name} className={titleClasses} tabIndex={-1}>
                     <span dir="auto">{name}</span>
+                    {liveChip}
                 </div>
                 {subtitle}
             </div>

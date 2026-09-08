@@ -54,6 +54,27 @@ export const RoomListItemContent = memo(function RoomListItemContent({
                 <div className={styles.ellipsis}>
                     <div className={styles.roomName} title={item.name} data-testid="room-name">
                         {item.name}
+                        {item.isLive && (
+                            <span
+                                aria-hidden="true"
+                                style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    marginLeft: "6px",
+                                    padding: "1px 6px",
+                                    borderRadius: "4px",
+                                    background: "#d00",
+                                    color: "#fff",
+                                    fontSize: "10px",
+                                    fontWeight: 700,
+                                    verticalAlign: "middle",
+                                }}
+                            >
+                                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fff" }} />
+                                AO VIVO
+                            </span>
+                        )}
                     </div>
                     {item.messagePreview && (
                         <Text as="div" size="sm" className={styles.ellipsis} title={item.messagePreview}>

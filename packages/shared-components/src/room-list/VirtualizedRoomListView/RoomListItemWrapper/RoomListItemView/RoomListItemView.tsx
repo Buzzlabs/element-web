@@ -70,6 +70,8 @@ export interface RoomListItemViewSnapshot {
     name: string;
     /** Whether the room name should be bolded (has unread/activity) */
     isBold: boolean;
+    /** Whether the room currently has an active live stream */
+    isLive: boolean;
     /** Optional message preview text */
     messagePreview?: string;
     /** Notification decoration data */

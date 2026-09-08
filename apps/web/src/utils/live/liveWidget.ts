@@ -1,4 +1,5 @@
-import { type MatrixClient } from "matrix-js-sdk/src/matrix";
+import { useEffect, useState } from "react";
+import { type Room, type MatrixClient, RoomStateEvent, MatrixEvent } from "matrix-js-sdk/src/matrix";
 
 const LIVE_WIDGET_TYPE = "im.vector.modular.widgets";
 const LIVE_WIDGET_STATE_KEY = "live_widget";
@@ -45,4 +46,24 @@ export function getLiveWidget(
     if (!content?.url) return null; // widget "vazio" = live encerrada
 
     return { title: content.title ?? "Live", url: content.url };
+}
+
+export function useRoomIsLive(client: MatrixClient, room: Room): boolean {
+    const [isLive, setIsLive] = useState<boolean>(() => !!getLiveWidget(client, room.roomId));
+
+    useEffect(() => {
+        const refresh = (): void => setIsLive(!!getLiveWidget(client, room.roomId));
+        refresh();
+
+        const onState = (event: MatrixEvent): void => {
+            if (event.getRoomId() === room.roomId) refresh();
+        };
+
+        client.on(RoomStateEvent.Events, onState);
+        return () => {
+            client.off(RoomStateEvent.Events, onState);
+        };
+    }, [client, room.roomId]);
+
+    return isLive;
 }
