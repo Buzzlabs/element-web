@@ -47,10 +47,12 @@ import { BusinessVisibilitySection } from "./BusinessVisibilitySection";
 import {
     getRoomFeatures, setRoomFeature, ROOM_FEATURES,
     getRoomCalendar, setRoomCalendar,
+    getStream, setStream,
 } from "../../../../../utils/admin/roomFeatures";
+import { getLiveWidget, startLive, stopLive } from "../../../../../utils/live/liveWidget"
 import ToggleSwitch from "../../../elements/ToggleSwitch";
 import defaultDispatcher from "../../../../../dispatcher/dispatcher";
-
+import TextInputDialog from "../../../dialogs/TextInputDialog";
 
 interface IProps {
     room: Room;
@@ -69,6 +71,10 @@ interface IState {
     roomCalendarId: string;
     calendarInput: string;
     calendarBusy: boolean;
+    streamPlaybackUrl: string;
+    streamInput: string;
+    streamBusy: boolean;
+    isLive: boolean;
 }
 
 export default class SecurityRoomSettingsTab extends React.Component<IProps, IState> {
@@ -100,6 +106,10 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
             roomCalendarId: "",
             calendarInput: "",
             calendarBusy: false,
+            streamPlaybackUrl: "",
+            streamInput: "",
+            streamBusy: false,
+            isLive: false,
         };
     }
 
@@ -107,6 +117,11 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
         this.context.on(RoomStateEvent.Events, this.onStateEvent);
         this.loadRoomFeatures();
         this.loadRoomCalendar();
+        this.loadStream();
+        this.refreshLiveState();
+        this.props.room.client.on(RoomStateEvent.Events, this.onRoomState);
+
+
 
         this.setState({
             hasAliases: await this.hasAliases(),
@@ -116,6 +131,91 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
             ),
         });
     }
+
+    private onRoomState = (): void => {
+        this.refreshLiveState();
+    };
+
+    private refreshLiveState = (): void => {
+        const widget = getLiveWidget(this.props.room.client, this.props.room.roomId);
+        this.setState({ isLive: !!widget });
+    };
+
+    private onToggleLive = async (): Promise<void> => {
+        // encerrar: não precisa perguntar nada
+        if (this.state.isLive) {
+            this.setState({ streamBusy: true });
+            try {
+                await stopLive(this.props.room.client, this.props.room.roomId);
+                this.refreshLiveState();
+            } catch (e) {
+                logger.error("Falha ao encerrar transmissão:", e);
+            } finally {
+                this.setState({ streamBusy: false });
+            }
+            return;
+        }
+
+        // iniciar: pede o título antes
+        if (!this.state.streamPlaybackUrl) {
+            logger.error("onToggleLive: no playback_url configured");
+            return;
+        }
+
+        const { finished } = Modal.createDialog(TextInputDialog, {
+            title: "Iniciar transmissão",
+            description: "Qual o título desta transmissão?",
+            placeholder: "Ex: Live de hoje — entrevista especial",
+            value: this.props.room.name || "Live",   // <-- era defaultValue, agora é value
+            button: "Iniciar",
+        });
+
+        const [confirmed, value] = await finished;
+        if (!confirmed) return;
+
+        const title = (value ?? "").trim() || this.props.room.name || "Live";
+
+        this.setState({ streamBusy: true });
+        try {
+            await startLive(
+                this.props.room.client,
+                this.props.room.roomId,
+                title,
+                this.state.streamPlaybackUrl,
+            );
+            this.refreshLiveState();
+        } catch (e) {
+            logger.error("Falha ao iniciar transmissão:", e);
+        } finally {
+            this.setState({ streamBusy: false });
+        }
+    };
+
+
+    private loadStream = async (): Promise<void> => {
+        try {
+            const { playback_url } = await getStream(this.props.room.roomId);
+            this.setState({
+                streamPlaybackUrl: playback_url ?? "",
+                streamInput: playback_url ?? "",
+            });
+        } catch (e) {
+            logger.error("Falha ao carregar canal de transmissão:", e);
+        }
+    };
+
+    private onSaveStream = async (): Promise<void> => {
+        const value = this.state.streamInput.trim();
+        this.setState({ streamBusy: true });
+        try {
+            await setStream(this.props.room.roomId, value);
+            this.setState({ streamPlaybackUrl: value });
+        } catch (e) {
+            logger.error("Falha ao salvar canal de transmissão:", e);
+        } finally {
+            this.setState({ streamBusy: false });
+        }
+    };
 
     private loadRoomCalendar = async (): Promise<void> => {
         try {
@@ -589,6 +689,7 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
                 description={"ID do Google Calendar que fornece os eventos desta sala."}
             >
                 <input
+                    className="mx_LiveStreamInput"
                     type="text"
                     value={this.state.calendarInput}
                     placeholder="exemplo@group.calendar.google.com"
@@ -603,6 +704,45 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
                 >
                     {"Salvar"}
                 </AccessibleButton>
+            </SettingsFieldset>
+        );
+        const streamSection = this.state.roomFeatures["live"] && (
+            <SettingsFieldset
+                legend={"Canal de transmissão (Live)"}
+                description={"URL de reprodução (HLS) do canal usado para transmitir ao vivo nesta sala."}
+            >
+                <input
+                    type="text"
+                    value={this.state.streamInput}
+                    placeholder="https://exemplo.com/live/canal.m3u8"
+                    onChange={(e) => this.setState({ streamInput: e.target.value })}
+                    disabled={this.state.streamBusy}
+                    style={{ width: "100%", padding: "8px", marginBottom: "8px", boxSizing: "border-box" }}
+                />
+                <AccessibleButton
+                    kind="primary"
+                    onClick={this.onSaveStream}
+                    disabled={this.state.streamBusy || this.state.streamInput.trim() === this.state.streamPlaybackUrl}
+                >
+                    {"Salvar"}
+                </AccessibleButton>
+
+                {/* controle de iniciar/encerrar — só faz sentido se já tem URL salva */}
+                {this.state.streamPlaybackUrl && (
+                    <div style={{ marginTop: "16px" }}>
+                        <AccessibleButton
+                            kind={this.state.isLive ? "danger" : "primary_outline"}
+                            onClick={this.onToggleLive}
+                            disabled={this.state.streamBusy}
+                        >
+                            {this.state.streamBusy
+                                ? "Aguarde…"
+                                : this.state.isLive
+                                  ? "Encerrar transmissão"
+                                  : "Iniciar transmissão"}
+                        </AccessibleButton>
+                    </div>
+                )}
             </SettingsFieldset>
         );
         const featuresSection = (
@@ -692,6 +832,7 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
                         <BusinessVisibilitySection room={this.props.room} />
                         {featuresSection}
                         {calendarSection}
+                        {streamSection}
                         {historySection}
                     </SettingsSection>
                 </Form.Root>
