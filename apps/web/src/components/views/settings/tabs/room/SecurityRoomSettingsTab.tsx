@@ -44,6 +44,12 @@ import { shouldForceDisableEncryption } from "../../../../../utils/crypto/should
 import { Caption } from "../../../typography/Caption";
 import { MEGOLM_ENCRYPTION_ALGORITHM } from "../../../../../utils/crypto";
 import { BusinessVisibilitySection } from "./BusinessVisibilitySection";
+import {
+    getRoomFeatures, setRoomFeature, ROOM_FEATURES,
+    getRoomCalendar, setRoomCalendar,
+} from "../../../../../utils/admin/roomFeatures";
+import ToggleSwitch from "../../../elements/ToggleSwitch";
+import defaultDispatcher from "../../../../../dispatcher/dispatcher";
 
 
 interface IProps {
@@ -58,6 +64,11 @@ interface IState {
     encrypted: boolean | null;
     stateEncrypted: boolean | null;
     showAdvancedSection: boolean;
+    roomFeatures: Record<string, boolean>;
+    featuresBusy: boolean;
+    roomCalendarId: string;
+    calendarInput: string;
+    calendarBusy: boolean;
 }
 
 export default class SecurityRoomSettingsTab extends React.Component<IProps, IState> {
@@ -84,11 +95,18 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
             encrypted: null, // async loaded in componentDidMount
             stateEncrypted: null, // async loaded in componentDidMount
             showAdvancedSection: false,
+            roomFeatures: {},
+            featuresBusy: false,
+            roomCalendarId: "",
+            calendarInput: "",
+            calendarBusy: false,
         };
     }
 
     public async componentDidMount(): Promise<void> {
         this.context.on(RoomStateEvent.Events, this.onStateEvent);
+        this.loadRoomFeatures();
+        this.loadRoomCalendar();
 
         this.setState({
             hasAliases: await this.hasAliases(),
@@ -98,6 +116,53 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
             ),
         });
     }
+
+    private loadRoomCalendar = async (): Promise<void> => {
+        try {
+            const { calendarId } = await getRoomCalendar(this.props.room.roomId);
+            this.setState({ roomCalendarId: calendarId ?? "", calendarInput: calendarId ?? "" });
+        } catch (e) {
+            logger.error("Falha ao carregar calendar:", e);
+        }
+    };
+
+    private onSaveCalendar = async (): Promise<void> => {
+        const value = this.state.calendarInput.trim();
+        this.setState({ calendarBusy: true });
+        try {
+            await setRoomCalendar(this.props.room.roomId, value);
+            this.setState({ roomCalendarId: value });
+        } catch (e) {
+            logger.error("Falha ao salvar calendar:", e);
+        } finally {
+            this.setState({ calendarBusy: false });
+        }
+    };
+
+    private loadRoomFeatures = async (): Promise<void> => {
+        try {
+            const features = await getRoomFeatures(this.props.room.roomId);
+            this.setState({ roomFeatures: features });
+        } catch (e) {
+            logger.error("Falha ao carregar room features:", e);
+        }
+    };
+
+    private onFeatureToggle = async (feature: string, enabled: boolean): Promise<void> => {
+        this.setState((s) => ({ roomFeatures: { ...s.roomFeatures, [feature]: enabled }, featuresBusy: true }));
+        try {
+            await setRoomFeature(this.props.room.roomId, feature, enabled);
+            defaultDispatcher.dispatch({
+                action: "room_features_changed",
+                roomId: this.props.room.roomId,
+            });
+        } catch (e) {
+            logger.error("Falha ao alterar feature:", e);
+            this.setState((s) => ({ roomFeatures: { ...s.roomFeatures, [feature]: !enabled } }));
+        } finally {
+            this.setState({ featuresBusy: false });
+        }
+    };
 
     private pullContentPropertyFromEvent<T>(event: MatrixEvent | null | undefined, key: string, defaultValue: T): T {
         return event?.getContent()[key] || defaultValue;
@@ -518,6 +583,50 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
         const hasEncryptionPermission = room.currentState.mayClientSendStateEvent(EventType.RoomEncryption, client);
         const isEncryptionForceDisabled = shouldForceDisableEncryption(client);
         const canEnableEncryption = !isEncrypted && !isEncryptionForceDisabled && hasEncryptionPermission;
+            const calendarSection = this.state.roomFeatures["events"] && (
+            <SettingsFieldset
+                legend={"Calendário de eventos"}
+                description={"ID do Google Calendar que fornece os eventos desta sala."}
+            >
+                <input
+                    type="text"
+                    value={this.state.calendarInput}
+                    placeholder="exemplo@group.calendar.google.com"
+                    onChange={(e) => this.setState({ calendarInput: e.target.value })}
+                    disabled={this.state.calendarBusy}
+                    style={{ width: "100%", padding: "8px", marginBottom: "8px", boxSizing: "border-box" }}
+                />
+                <AccessibleButton
+                    kind="primary"
+                    onClick={this.onSaveCalendar}
+                    disabled={this.state.calendarBusy || this.state.calendarInput.trim() === this.state.roomCalendarId}
+                >
+                    {"Salvar"}
+                </AccessibleButton>
+            </SettingsFieldset>
+        );
+        const featuresSection = (
+        <SettingsFieldset
+            legend={"Funcionalidades da sala"}
+            description={"Ative ou desative abas opcionais para esta sala."}
+        >
+            {ROOM_FEATURES.map(({ key, label }) => (
+                <div
+                    key={key}
+                    className="mx_SettingsFlag"
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}
+                >
+                    <span>{label}</span>
+                    <ToggleSwitch
+                        checked={!!this.state.roomFeatures[key]}
+                        disabled={this.state.featuresBusy}
+                        onChange={(checked) => this.onFeatureToggle(key, checked)}
+                        aria-label={label}
+                    />
+                </div>
+            ))}
+        </SettingsFieldset>
+    );
 
         let encryptionSettings: JSX.Element | undefined;
         if (
@@ -581,6 +690,8 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
                         </SettingsFieldset>
                         {this.renderJoinRule()}
                         <BusinessVisibilitySection room={this.props.room} />
+                        {featuresSection}
+                        {calendarSection}
                         {historySection}
                     </SettingsSection>
                 </Form.Root>
