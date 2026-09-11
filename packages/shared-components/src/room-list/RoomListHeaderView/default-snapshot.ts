@@ -12,7 +12,6 @@ export const defaultSnapshot: RoomListHeaderViewSnapshot = {
     displayComposeMenu: true,
     displaySpaceMenu: true,
     canCreateRoom: true,
-    canCreateBundle:true,
     canCreateVideoRoom: true,
     canInviteInSpace: true,
     canAccessSpaceSettings: true,

@@ -1,4 +1,13 @@
 import { MatrixClientPeg } from "../../MatrixClientPeg";
+import { type MatrixClient } from "matrix-js-sdk/src/matrix";
+
+export interface SpaceChildRoom {
+    roomId: string;
+    name?: string;
+    topic?: string;
+    numJoinedMembers?: number;
+    roomType?: string;
+}
 
 export interface RoomVisibilityInfo {
     room_id: string;
@@ -74,4 +83,34 @@ export async function changeAccessType(roomId: string, accessType: "public" | "p
     }
     const body = await res.json();
     return typeof body?.price === "number" ? body.price : null;
+}
+
+export async function inviteSpace(spaceId: string): Promise<string[]> {
+    const res = await fetch(`${baseUrl()}/_synapse/room_service/invite_space`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ space_id: spaceId }),
+    });
+    if (!res.ok) {
+        throw new Error((await readError(res)) ?? `invite_space failed with status ${res.status}`);
+    }
+    return res.json();
+}
+
+export async function getSpaceChildRooms(p0: MatrixClient, spaceId: string): Promise<SpaceChildRoom[]> {
+    const res = await fetch(`${baseUrl()}/_synapse/room_service/space_children`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ space_id: spaceId }),
+    });
+    if (!res.ok) {
+        throw new Error((await readError(res)) ?? `space_children failed with status ${res.status}`);
+    }
+    const body = await res.json();
+    const rooms = Array.isArray(body?.rooms) ? body.rooms : [];
+    return rooms.map((r: any) => ({
+        roomId: r.room_id,
+        name: r.name,
+        numJoinedMembers: r.member_count,
+    }));
 }

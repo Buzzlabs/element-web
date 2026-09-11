@@ -12,7 +12,6 @@
  */
 import { MatrixClientPeg } from "../MatrixClientPeg";
 
-/** Homeserver base URL, resolved from the logged-in client (same as bundleApi/room_service). */
 function getBaseUrl(): string {
     const client = MatrixClientPeg.get();
     if (!client) throw new Error("Matrix client não disponível");

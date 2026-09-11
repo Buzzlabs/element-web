@@ -100,8 +100,8 @@ import { transformSearchTerm } from "../../../../utils/SearchInput";
 import { Filter } from "./Filter";
 import { useDiscoverRooms, type DiscoverRoom } from "../../../../hooks/useDiscoverRooms";
 import { useJoinByKeyword } from "../../../../hooks/useJoinByKeyword";
-import { useDiscoverBundles } from "../../../../hooks/useDiscoverBundles";
-import { type Bundle, inviteBundle } from "../../../../bundles/bundleApi";
+import { inviteSpace } from "../../../../utils/admin/roomBusiness";
+import { getSpaceChildRooms, type SpaceChildRoom } from "../../../../utils/admin/roomBusiness";
 
 const MAX_RECENT_SEARCHES = 10;
 const SECTION_LIMIT = 50; // only show 50 results per section for performance reasons
@@ -132,7 +132,6 @@ enum Section {
     Spaces,
     Suggestions,
     PublicRoomsAndSpaces,
-    Bundles,
     DiscoverSpaces,
 }
 
@@ -144,8 +143,6 @@ function filterToLabel(filter: Filter): string {
             return _t("spotlight_dialog|public_rooms_label");
         case Filter.PublicSpaces:
             return _t("spotlight_dialog|public_spaces_label");
-         case Filter.Bundles:
-            return "Bundles";
     }
 }
 
@@ -157,8 +154,6 @@ function filterToIcon(filter: Filter): JSX.Element {
             return <RoomIcon />;
         case Filter.PublicSpaces:
             return <SpaceIcon />;
-        case Filter.Bundles:
-            return <RoomIcon />;
     }
 }
 
@@ -189,10 +184,6 @@ interface IDiscoverRoomResult extends IBaseResult {
     discoverRoom: DiscoverRoom;
 }
 
-interface IBundleResult extends IBaseResult {
-    bundle: Bundle;
-}
-
 interface IRoomResult extends IBaseResult {
     room: Room;
 }
@@ -212,12 +203,11 @@ interface IResult extends IBaseResult {
     onClick?(this: void): void;
 }
 
-type Result = IRoomResult | IPublicRoomResult | IMemberResult | IResult | IDiscoverRoomResult | IBundleResult;
+type Result = IRoomResult | IPublicRoomResult | IMemberResult | IResult | IDiscoverRoomResult;
 
 const isRoomResult = (result: any): result is IRoomResult => !!result?.room;
 const isPublicRoomResult = (result: any): result is IPublicRoomResult => !!result?.publicRoom;
 const isDiscoverRoomResult = (result: any): result is IDiscoverRoomResult => !!result?.discoverRoom;
-const isBundleResult = (result: any): result is IBundleResult => !!result?.bundle;
 const isMemberResult = (result: any): result is IMemberResult => !!result?.member;
 
 const toPublicRoomResult = (publicRoom: IPublicRoomsChunkRoom): IPublicRoomResult => ({
@@ -240,7 +230,7 @@ const toDiscoverRoomResult = (discoverRoom: DiscoverRoom): IDiscoverRoomResult =
         discoverRoom,
         section: isSpace ? Section.DiscoverSpaces : Section.PublicRoomsAndSpaces,
         filter: isSpace
-            ? [Filter.PublicSpaces, Filter.PublicRooms]   // <-- PublicRooms também, pro space passar ao abrir (igual bundle)
+            ? [Filter.PublicSpaces, Filter.PublicRooms]   
             : [Filter.PublicRooms],
         query: filterBoolean([
             discoverRoom.room_id.toLowerCase(),
@@ -248,16 +238,6 @@ const toDiscoverRoomResult = (discoverRoom: DiscoverRoom): IDiscoverRoomResult =
         ]),
     };
 };
-
-const toBundleResult = (bundle: Bundle): IBundleResult => ({
-    bundle,
-    section: Section.Bundles,
-    filter: [Filter.Bundles, Filter.PublicRooms],
-    query: filterBoolean([
-        bundle.bundle_id.toLowerCase(),
-        bundle.bundle_name?.toLowerCase(),
-    ]),
-});
 
 const toRoomResult = (room: Room): IRoomResult => {
     const myUserId = MatrixClientPeg.safeGet().getUserId();
@@ -373,18 +353,17 @@ interface IDirectoryOpts {
 
 const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = null, onFinished }) => {
     const [payingRoom, setPayingRoom] = useState<DiscoverRoom | null>(null);
+    const [payingSpace, setPayingSpace] = useState<DiscoverRoom | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
-    const [payingBundle, setPayingBundle] = useState<Bundle | null>(null);
+    const [detailsSpace, setDetailsSpace] = useState<DiscoverRoom | null>(null);
+    const [detailsRooms, setDetailsRooms] = useState<SpaceChildRoom[]>([]);
+    const [detailsLoading, setDetailsLoading] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const cli = MatrixClientPeg.safeGet();
     const rovingContext = useContext(RovingTabIndexContext);
     const [query, _setQuery] = useState(initialText);
     const [recentSearches, clearRecentSearches] = useRecentSearches();
     const [filter, setFilterInternal] = useState<Filter | null>(initialFilter);
-    // Ao abrir via "Explorar" (bússola → initialFilter=PublicRooms), o chip de
-    // Bundles também fica ativo junto com Salas públicas, cada um com seu
-    // próprio pill. Fechável independentemente, sem afetar o `filter` principal.
-    const [showBundlesChip, setShowBundlesChip] = useState<boolean>(initialFilter === Filter.PublicRooms);
     const [showSpacesChip, setShowSpacesChip] = useState<boolean>(initialFilter === Filter.PublicRooms);
     const setFilter = useCallback((filter: Filter | null) => {
         setFilterInternal(filter);
@@ -422,7 +401,6 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
         search: searchPublicRooms,
         error: publicRoomsError,
     } = usePublicRoomDirectory();
-    const { loading: bundlesLoading, bundles, error: bundlesError } = useDiscoverBundles();
     const { loading: discoverLoading, rooms: discoverRooms, error: discoverError } = useDiscoverRooms();
     const { joinByKeyword } = useJoinByKeyword();
     const { loading: peopleLoading, users: userDirectorySearchResults, search: searchPeople } = useUserDirectory();
@@ -495,9 +473,8 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
             ...roomResults,
             ...userResults,
             ...discoverRooms.map(toDiscoverRoomResult),
-            ...bundles.map(toBundleResult),
         ].filter((result) => filter === null || result.filter.includes(filter));
-    }, [cli, userDirectorySearchResults, profile, discoverRooms, bundles, filter, msc3946ProcessDynamicPredecessor]);
+    }, [cli, userDirectorySearchResults, profile, discoverRooms, filter, msc3946ProcessDynamicPredecessor]);
 
     const results = useMemo<Record<Section, Result[]>>(() => {
         const results: Record<Section, Result[]> = {
@@ -506,7 +483,6 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
             [Section.Spaces]: [],
             [Section.Suggestions]: [],
             [Section.PublicRoomsAndSpaces]: [],
-            [Section.Bundles]: [],
             [Section.DiscoverSpaces]: [],
         };
 
@@ -531,7 +507,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                     }
                 } else if (isMemberResult(entry)) {
                     if (!entry.alreadyFiltered && !entry.query?.some((q) => q.includes(lcQuery))) return; // bail, does not match query
-                } else if (isPublicRoomResult(entry)|| isDiscoverRoomResult(entry) || isBundleResult(entry)) {
+                } else if (isPublicRoomResult(entry)|| isDiscoverRoomResult(entry)) {
                     if (!entry.query?.some((q) => q.includes(lcQuery))) return; // bail, does not match query
                 } else {
                     if (!entry.name.toLowerCase().includes(lcQuery) && !entry.query?.some((q) => q.includes(lcQuery)))
@@ -541,11 +517,8 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 results[entry.section].push(entry);
             });
         } else if (filter === Filter.PublicRooms || filter === Filter.PublicSpaces) {
-            // return all results for public rooms (and bundles, when that chip is also active) if no query is given
             possibleResults.forEach((entry) => {
                 if (isPublicRoomResult(entry) || isDiscoverRoomResult(entry)) {
-                    results[entry.section].push(entry);
-                } else if (filter === Filter.PublicRooms && showBundlesChip && isBundleResult(entry)) {
                     results[entry.section].push(entry);
                 } else if (
                     filter === Filter.PublicRooms &&
@@ -553,13 +526,6 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                     isDiscoverRoomResult(entry) &&
                     entry.discoverRoom.room_kind === "space"
                 ) {
-                    results[entry.section].push(entry);
-                }
-            });
-        } else if (filter === Filter.Bundles) {
-            // return all bundles if no query is given
-            possibleResults.forEach((entry) => {
-                if (isBundleResult(entry)) {
                     results[entry.section].push(entry);
                 }
             });
@@ -682,18 +648,45 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
         }
     };
 
-    const confirmBundlePayment = async (): Promise<void> => {
-        if (!payingBundle) return;
+    const openSpaceDetails = async (space: DiscoverRoom): Promise<void> => {
+        setDetailsSpace(space);
+        setDetailsRooms([]);
+        setDetailsLoading(true);
         try {
-            await inviteBundle(MatrixClientPeg.safeGet(), payingBundle.bundle_id);
-            const firstRoomId = payingBundle.rooms[0]?.room_id;
-            setPayingBundle(null);
-            if (firstRoomId) viewRoom({ roomId: firstRoomId }, true);
+            const rooms = await getSpaceChildRooms(MatrixClientPeg.safeGet(), space.room_id);
+            setDetailsRooms(rooms);
         } catch {
-            // erro já logado dentro do bundleApi; aqui só fechamos o modal
-            setPayingBundle(null);
+            setDetailsRooms([]);
+        } finally {
+            setDetailsLoading(false);
         }
     };
+
+    const confirmSpacePayment = async (): Promise<void> => {
+        if (!payingSpace) return;
+        try {
+            const spaceId = payingSpace.room_id;
+            const joinedRooms = await inviteSpace(spaceId);  // backend já colocou você nelas
+            setPayingSpace(null);
+
+            const cli = MatrixClientPeg.safeGet();
+
+            // faz o CLIENTE reconhecer as salas (você já é membro, então é rápido
+            // e não dá 403). Isso dispara a atualização da lista lateral.
+            await Promise.all(
+                [spaceId, ...joinedRooms].map((roomId) =>
+                    cli.joinRoom(roomId).catch(() => {
+                        // já é membro / erro benigno — ignora
+                    }),
+                ),
+            );
+
+            viewRoom({ roomId: spaceId }, true);
+        } catch {
+            setPayingSpace(null);
+        }
+    };
+
 
     let otherSearchesSection: JSX.Element | undefined;
     if (trimmedQuery || (filter !== Filter.PublicRooms && filter !== Filter.PublicSpaces)) {
@@ -727,15 +720,6 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                             {filterToLabel(Filter.PublicRooms)}
                         </Option>
                     )}
-                    {filter !== Filter.Bundles && (
-                        <Option
-                            id="mx_SpotlightDialog_button_exploreBundles"
-                            onClick={() => setFilter(Filter.Bundles)}
-                        >
-                            {filterToIcon(Filter.Bundles)}
-                            {filterToLabel(Filter.Bundles)}
-                        </Option>
-                    )}
                     {filter !== Filter.People && (
                         <Option id="mx_SpotlightDialog_button_startChat" onClick={() => setFilter(Filter.People)}>
                             {filterToIcon(Filter.People)}
@@ -766,6 +750,74 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
     if (trimmedQuery || filter !== null) {
         const resultMapper = (result: Result): JSX.Element => {
             if (isDiscoverRoomResult(result)) {
+                // SPACE tem tratamento próprio (compra via inviteSpace).
+                // Precisa vir antes da lógica de sala, senão o space cai aqui.
+                if (result.discoverRoom.room_kind === "space") {
+                    const space = result.discoverRoom;
+                    const isPaid = Number(space.price) > 0;
+                    const buttonLabel = isPaid ? "Pagar" : "Entrar";
+
+                    const onAction = async (ev: ButtonEvent): Promise<void> => {
+                        ev.stopPropagation();
+                        if (isPaid) {
+                            setPayingSpace(space);
+                            return;
+                        }
+                        // grátis: entra em todas as salas do space (igual o pago, sem cobrança)
+                        try {
+                            const spaceId = space.room_id;
+                            const joinedRooms = await inviteSpace(spaceId);
+                            const cli = MatrixClientPeg.safeGet();
+                            await Promise.all(
+                                [spaceId, ...joinedRooms].map((roomId) =>
+                                    cli.joinRoom(roomId).catch(() => {}),
+                                ),
+                            );
+                            viewRoom({ roomId: spaceId }, true, ev.type !== "click");
+                        } catch {
+                            // erro já logado no inviteSpace
+                        }
+                    };
+
+                    return (
+                        <Option
+                            id={`mx_SpotlightDialog_button_result_${space.room_id}`}
+                            className="mx_SpotlightDialog_result_multiline"
+                            key={`${Section[result.section]}-${space.room_id}`}
+                            onClick={onAction}
+                            endAdornment={
+                                <AccessibleButton
+                                    kind={isPaid ? "primary" : "primary_outline"}
+                                    onClick={onAction}
+                                    tabIndex={-1}
+                                >
+                                    {buttonLabel}
+                                </AccessibleButton>
+                            }
+                        >
+                            <div className="mx_SpotlightDialog_result_multiline_text">
+                            <span className="mx_SpotlightDialog_result_multiline_name">{space.name}</span>
+                            <div className="mx_SpotlightDialog_result_details">
+                                {isPaid ? `R$ ${(space.price / 100).toFixed(2)}` : "Grátis"}
+                                {" · "}
+                                <AccessibleButton
+                                kind="link"
+                                onClick={(ev: ButtonEvent) => {
+                                    ev.stopPropagation();
+                                    openSpaceDetails(space);
+                                }}
+                                tabIndex={-1}
+                                style={{ color: "inherit", 
+                                fontWeight: "normal",textDecoration: "underline" }}
+                            >
+                                Ver salas
+                            </AccessibleButton>
+                            </div>
+                        </div>
+
+                        </Option>
+                    );
+                }
                 const room = result.discoverRoom;
                 const isPaid = Number(room.price) > 0;
                 const buttonLabel = isPaid ? 
@@ -810,58 +862,6 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                             <div className="mx_SpotlightDialog_result_details">
                                 {room.member_count} {room.member_count === 1 ? "membro" : "membros"}
                                 {isPaid ? ` · R$ ${(room.price / 100).toFixed(2)}` : " · Grátis"}
-                            </div>
-                        </div>
-                    </Option>
-                );
-            }
-            if (isBundleResult(result)) {
-                const bundle = result.bundle;
-                const isPaid = Number(bundle.price) > 0;
-                const buttonLabel = isPaid ? "Pagar" : "Entrar";
-
-                const onAction = async (ev: ButtonEvent): Promise<void> => {
-                    ev.stopPropagation();
-                    if (isPaid) {
-                        setPayingBundle(bundle); // abre o popup de confirmação
-                        return;
-                    }
-                    // bundle gratuito: entra direto em todas as salas
-                    try {
-                        await inviteBundle(cli, bundle.bundle_id);
-                        const firstRoomId = bundle.rooms[0]?.room_id;
-                        if (firstRoomId) viewRoom({ roomId: firstRoomId }, true, ev.type !== "click");
-                    } catch {
-                        // erro já logado dentro do bundleApi
-                    }
-                };
-
-                return (
-                    <Option
-                        id={`mx_SpotlightDialog_button_result_${bundle.bundle_id}`}
-                        className="mx_SpotlightDialog_result_multiline"
-                        key={`${Section[result.section]}-${bundle.bundle_id}`}
-                        onClick={onAction}
-                        endAdornment={
-                            <AccessibleButton
-                                kind={isPaid ? "primary" : "primary_outline"}
-                                onClick={onAction}
-                                tabIndex={-1}
-                            >
-                                {buttonLabel}
-                            </AccessibleButton>
-                        }
-                    >
-                        <RoomAvatar
-                            className="mx_SearchResultAvatar"
-                            oobData={{ roomId: bundle.bundle_id, name: bundle.bundle_name }}
-                            size={AVATAR_SIZE}
-                        />
-                        <div className="mx_SpotlightDialog_result_multiline_text">
-                            <span className="mx_SpotlightDialog_result_multiline_name">{bundle.bundle_name}</span>
-                            <div className="mx_SpotlightDialog_result_details">
-                                {bundle.rooms.length} {bundle.rooms.length === 1 ? "sala" : "salas"}
-                                {isPaid ? ` · R$ ${(bundle.price / 100).toFixed(2)}` : " · Grátis"}
                             </div>
                         </div>
                     </Option>
@@ -1129,37 +1129,6 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 </div>
             );
         }
-        let bundlesSection: JSX.Element | undefined;
-        if (filter === Filter.Bundles || (filter === Filter.PublicRooms && showBundlesChip)) {
-            let content: JSX.Element | JSX.Element[];
-            if (bundlesError) {
-                content = (
-                    <div className="mx_SpotlightDialog_otherSearches_messageSearchText">
-                        Não foi possível carregar os bundles.
-                    </div>
-                );
-            } else if (!bundlesLoading && results[Section.Bundles].length === 0) {
-                content = (
-                    <div className="mx_SpotlightDialog_otherSearches_messageSearchText">
-                        Nenhum bundle disponível no momento.
-                    </div>
-                );
-            } else {
-                content = results[Section.Bundles].slice(0, SECTION_LIMIT).map(resultMapper);
-            }
-
-            bundlesSection = (
-                <div
-                    className="mx_SpotlightDialog_section mx_SpotlightDialog_results"
-                    role="group"
-                    aria-labelledby="mx_SpotlightDialog_section_bundles"
-                >
-                    <h4 id="mx_SpotlightDialog_section_bundles">Bundles</h4>
-                    <div>{content}</div>
-                </div>
-            );
-        }
-
         let spaceRoomsSection: JSX.Element | undefined;
         if (spaceResults.length && activeSpace && filter === null) {
             spaceRoomsSection = (
@@ -1320,7 +1289,6 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 {spacesSection}
                 {spaceRoomsSection}
                 {discoverSpacesSection}
-                {bundlesSection}
                 {publicRoomsSection}
                 {joinRoomSection}
             </>
@@ -1517,6 +1485,114 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
 
     const activeDescendant = rovingContext.state.activeNode?.id;
 
+    const spaceDetailsModal = detailsSpace ? (
+        <div
+            style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.5)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 5000,
+            }}
+            onClick={() => setDetailsSpace(null)}
+        >
+            <div
+                style={{
+                    background: "var(--cpd-color-bg-canvas-default, #fff)",
+                    color: "var(--cpd-color-text-primary, #000)",
+                    padding: "24px",
+                    borderRadius: "8px",
+                    minWidth: "320px",
+                    maxWidth: "90vw",
+                    maxHeight: "70vh",
+                    overflowY: "auto",
+                    boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
+                }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h3 style={{ marginTop: 0 }}>Salas em {detailsSpace.name}</h3>
+
+                {detailsLoading ? (
+                    <p>Carregando…</p>
+                ) : detailsRooms.length === 0 ? (
+                    <p>Nenhuma sala encontrada neste espaço.</p>
+                ) : (
+                    <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                        {detailsRooms.map((r) => (
+                            <li
+                                key={r.roomId}
+                                style={{
+                                    padding: "8px 0",
+                                    borderBottom: "1px solid var(--cpd-color-bg-subtle-secondary, #eee)",
+                                }}
+                            >
+                                <strong>{r.name ?? r.roomId}</strong>
+                                {typeof r.numJoinedMembers === "number" && (
+                                    <span style={{ opacity: 0.7 }}>
+                                        {" "}· {r.numJoinedMembers} integrante(s)
+                                    </span>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+                    <AccessibleButton kind="primary" onClick={() => setDetailsSpace(null)}>
+                        Fechar
+                    </AccessibleButton>
+                </div>
+            </div>
+        </div>
+    ) : null;
+
+    const spacePaymentModal = payingSpace ? (
+        <div
+            style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.5)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 5000,
+            }}
+            onClick={() => setPayingSpace(null)}
+        >
+            <div
+                style={{
+                    background: "var(--cpd-color-bg-canvas-default, #fff)",
+                    color: "var(--cpd-color-text-primary, #000)",
+                    padding: "24px",
+                    borderRadius: "8px",
+                    minWidth: "280px",
+                    maxWidth: "90vw",
+                    boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
+                }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h3 style={{ marginTop: 0 }}>Confirmar pagamento?</h3>
+                <p>
+                    Espaço: <strong>{payingSpace.name}</strong>
+                    <br />
+                    Acesso a todas as salas incluídas
+                    <br />
+                    Valor: <strong>R$ {(payingSpace.price / 100).toFixed(2)}</strong>
+                </p>
+                <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "16px" }}>
+                    <AccessibleButton kind="secondary" onClick={() => setPayingSpace(null)}>
+                        Cancelar
+                    </AccessibleButton>
+                    <AccessibleButton kind="primary" onClick={confirmSpacePayment}>
+                        Pagar
+                    </AccessibleButton>
+                </div>
+            </div>
+        </div>
+    ) : null;
+
     const paymentModal = payingRoom ? (
         <div
             style={{
@@ -1559,56 +1635,11 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
             </div>
         </div>
     ) : null;
-
-    const bundlePaymentModal = payingBundle ? (
-        <div
-            style={{
-                position: "fixed",
-                inset: 0,
-                background: "rgba(0,0,0,0.5)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 5000,
-            }}
-            onClick={() => setPayingBundle(null)}
-        >
-            <div
-                style={{
-                    background: "var(--cpd-color-bg-canvas-default, #fff)",
-                    color: "var(--cpd-color-text-primary, #000)",
-                    padding: "24px",
-                    borderRadius: "8px",
-                    minWidth: "280px",
-                    maxWidth: "90vw",
-                    boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
-                }}
-                onClick={(e) => e.stopPropagation()}
-            >
-                <h3 style={{ marginTop: 0 }}>Confirmar pagamento?</h3>
-                <p>
-                    Bundle: <strong>{payingBundle.bundle_name}</strong>
-                    <br />
-                    {payingBundle.rooms.length} sala(s) incluída(s)
-                    <br />
-                    Valor: <strong>R$ {(payingBundle.price / 100).toFixed(2)}</strong>
-                </p>
-                <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "16px" }}>
-                    <AccessibleButton kind="secondary" onClick={() => setPayingBundle(null)}>
-                        Cancelar
-                    </AccessibleButton>
-                    <AccessibleButton kind="primary" onClick={confirmBundlePayment}>
-                        Pagar
-                    </AccessibleButton>
-                </div>
-            </div>
-        </div>
-    ) : null;
-
     return (
         <>
             {paymentModal}
-            {bundlePaymentModal}
+            {spacePaymentModal}
+            {spaceDetailsModal}
             <div id="mx_SpotlightDialog_keyboardPrompt">
                 {_t(
                     "spotlight_dialog|keyboard_scroll_hint",
@@ -1635,22 +1666,6 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 aria-label={_t("spotlight_dialog|search_dialog")}
             >
                 <div className="mx_SpotlightDialog_searchBox mx_textinput">
-                    {filter === Filter.PublicRooms && showBundlesChip && (
-                        <div className="mx_SpotlightDialog_filter">
-                            {filterToIcon(Filter.Bundles)}
-                            <span>{filterToLabel(Filter.Bundles)}</span>
-                            <AccessibleButton
-                                tabIndex={-1}
-                                title={_t("spotlight_dialog|remove_filter", {
-                                    filter: filterToLabel(Filter.Bundles),
-                                })}
-                                className="mx_SpotlightDialog_filter--close"
-                                onClick={() => setShowBundlesChip(false)}
-                            >
-                                <CloseIcon />
-                            </AccessibleButton>
-                        </div>
-                    )}
                                         {filter === Filter.PublicRooms && showSpacesChip && (
                         <div className="mx_SpotlightDialog_filter">
                             {filterToIcon(Filter.PublicSpaces)}
