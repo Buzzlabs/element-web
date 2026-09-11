@@ -133,6 +133,7 @@ enum Section {
     Suggestions,
     PublicRoomsAndSpaces,
     Bundles,
+    DiscoverSpaces,
 }
 
 function filterToLabel(filter: Filter): string {
@@ -232,15 +233,21 @@ const toPublicRoomResult = (publicRoom: IPublicRoomsChunkRoom): IPublicRoomResul
     ]),
 });
 
-const toDiscoverRoomResult = (discoverRoom: DiscoverRoom): IDiscoverRoomResult => ({
-    discoverRoom,
-    section: Section.PublicRoomsAndSpaces,
-    filter: [Filter.PublicRooms],
-    query: filterBoolean([
-        discoverRoom.room_id.toLowerCase(),
-        discoverRoom.name?.toLowerCase(),
-    ]),
-});
+const toDiscoverRoomResult = (discoverRoom: DiscoverRoom): IDiscoverRoomResult => {
+    const isSpace = discoverRoom.room_kind === "space";
+
+    return {
+        discoverRoom,
+        section: isSpace ? Section.DiscoverSpaces : Section.PublicRoomsAndSpaces,
+        filter: isSpace
+            ? [Filter.PublicSpaces, Filter.PublicRooms]   // <-- PublicRooms também, pro space passar ao abrir (igual bundle)
+            : [Filter.PublicRooms],
+        query: filterBoolean([
+            discoverRoom.room_id.toLowerCase(),
+            discoverRoom.name?.toLowerCase(),
+        ]),
+    };
+};
 
 const toBundleResult = (bundle: Bundle): IBundleResult => ({
     bundle,
@@ -378,6 +385,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
     // Bundles também fica ativo junto com Salas públicas, cada um com seu
     // próprio pill. Fechável independentemente, sem afetar o `filter` principal.
     const [showBundlesChip, setShowBundlesChip] = useState<boolean>(initialFilter === Filter.PublicRooms);
+    const [showSpacesChip, setShowSpacesChip] = useState<boolean>(initialFilter === Filter.PublicRooms);
     const setFilter = useCallback((filter: Filter | null) => {
         setFilterInternal(filter);
         inputRef.current?.focus();
@@ -499,6 +507,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
             [Section.Suggestions]: [],
             [Section.PublicRoomsAndSpaces]: [],
             [Section.Bundles]: [],
+            [Section.DiscoverSpaces]: [],
         };
 
         // Group results in their respective sections
@@ -537,6 +546,13 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 if (isPublicRoomResult(entry) || isDiscoverRoomResult(entry)) {
                     results[entry.section].push(entry);
                 } else if (filter === Filter.PublicRooms && showBundlesChip && isBundleResult(entry)) {
+                    results[entry.section].push(entry);
+                } else if (
+                    filter === Filter.PublicRooms &&
+                    showSpacesChip &&
+                    isDiscoverRoomResult(entry) &&
+                    entry.discoverRoom.room_kind === "space"
+                ) {
                     results[entry.section].push(entry);
                 }
             });
@@ -1081,7 +1097,38 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 </div>
             );
         }
-
+         let discoverSpacesSection: JSX.Element | undefined;
+        if (filter === Filter.PublicSpaces || (filter === Filter.PublicRooms && showSpacesChip)) {
+            let content: JSX.Element | JSX.Element[];
+            if (discoverError) {
+                content = (
+                    <div className="mx_SpotlightDialog_otherSearches_messageSearchText">
+                        Não foi possível carregar os espaços.
+                    </div>
+                );
+            } else if (!discoverLoading && results[Section.DiscoverSpaces].length === 0) {
+                content = (
+                    <div className="mx_SpotlightDialog_otherSearches_messageSearchText">
+                        Nenhum espaço disponível no momento.
+                    </div>
+                );
+            } else {
+                content = results[Section.DiscoverSpaces].slice(0, SECTION_LIMIT).map(resultMapper);
+            }
+ 
+            discoverSpacesSection = (
+                <div
+                    className="mx_SpotlightDialog_section mx_SpotlightDialog_results"
+                    role="group"
+                    aria-labelledby="mx_SpotlightDialog_section_discoverSpaces"
+                >
+                    <h4 id="mx_SpotlightDialog_section_discoverSpaces">
+                        {filterToLabel(Filter.PublicSpaces)}
+                    </h4>
+                    <div>{content}</div>
+                </div>
+            );
+        }
         let bundlesSection: JSX.Element | undefined;
         if (filter === Filter.Bundles || (filter === Filter.PublicRooms && showBundlesChip)) {
             let content: JSX.Element | JSX.Element[];
@@ -1272,6 +1319,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 {roomsSection}
                 {spacesSection}
                 {spaceRoomsSection}
+                {discoverSpacesSection}
                 {bundlesSection}
                 {publicRoomsSection}
                 {joinRoomSection}
@@ -1598,6 +1646,22 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                                 })}
                                 className="mx_SpotlightDialog_filter--close"
                                 onClick={() => setShowBundlesChip(false)}
+                            >
+                                <CloseIcon />
+                            </AccessibleButton>
+                        </div>
+                    )}
+                                        {filter === Filter.PublicRooms && showSpacesChip && (
+                        <div className="mx_SpotlightDialog_filter">
+                            {filterToIcon(Filter.PublicSpaces)}
+                            <span>{filterToLabel(Filter.PublicSpaces)}</span>
+                            <AccessibleButton
+                                tabIndex={-1}
+                                title={_t("spotlight_dialog|remove_filter", {
+                                    filter: filterToLabel(Filter.PublicSpaces),
+                                })}
+                                className="mx_SpotlightDialog_filter--close"
+                                onClick={() => setShowSpacesChip(false)}
                             >
                                 <CloseIcon />
                             </AccessibleButton>

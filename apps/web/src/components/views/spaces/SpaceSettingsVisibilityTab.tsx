@@ -6,12 +6,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
-import React, { type ChangeEventHandler, type JSX, useCallback, useState } from "react";
+import React, { type ChangeEventHandler, type JSX, useCallback, useEffect, useRef, useState } from "react";
 import {
     type Room,
     EventType,
     GuestAccess,
-    HistoryVisibility,
+HistoryVisibility,
     JoinRule,
     type MatrixClient,
 } from "matrix-js-sdk/src/matrix";
@@ -28,6 +28,7 @@ import SettingsFieldset from "../settings/SettingsFieldset";
 import { useAsyncMemo } from "../../../hooks/useAsyncMemo";
 import { SettingsSection } from "../settings/shared/SettingsSection";
 import SettingsTab from "../settings/tabs/SettingsTab";
+import { changeVisibility } from "../../../utils/admin/roomBusiness";
 
 interface IProps {
     matrixClient: MatrixClient;
@@ -50,6 +51,35 @@ const SpaceSettingsVisibilityTab: React.FC<IProps> = ({ matrixClient: cli, space
     const userId = cli.getUserId()!;
 
     const joinRule = useRoomState(space, (state) => state.getJoinRule());
+
+    const prevJoinRuleRef = useRef<JoinRule | null>(null);
+ 
+    useEffect(() => {
+        // primeira execução (montagem): só registra o valor atual, não sincroniza
+        if (prevJoinRuleRef.current === null) {
+            prevJoinRuleRef.current = joinRule;
+            return;
+        }
+ 
+        // não mudou: nada a fazer
+        if (prevJoinRuleRef.current === joinRule) {
+            return;
+        }
+ 
+        prevJoinRuleRef.current = joinRule;
+ 
+        // public => visível no discover; qualquer outro (invite/restricted/knock) => não
+        const visible = joinRule === JoinRule.Public;
+ 
+        // space é organizacional e grátis => price 0
+        changeVisibility(space.roomId, visible, 0).catch((e) => {
+            // não bloqueia a UI do Matrix; só avisa que o backend não sincronizou
+            setError("Não foi possível atualizar a visibilidade no servidor.");
+            // eslint-disable-next-line no-console
+            console.error("Falha ao sincronizar visibilidade do space com o backend:", e);
+        });
+    }, [joinRule, space.roomId]);
+    
 
     const [guestAccessEnabled, setGuestAccessEnabled] = useLocalEcho<boolean>(
         () =>

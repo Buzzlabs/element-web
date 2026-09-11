@@ -339,7 +339,7 @@ export default async function createRoom(client: MatrixClient, opts: IOpts): Pro
                 },
                 body: JSON.stringify({
                     name: opts.name ?? "",
-                    room_kind: "group",
+                    room_kind: opts.roomType === RoomType.Space ? "space" : "group",
                     keyword: opts.keyword,
                     visible: opts.visible,
                     access_type: opts.access_type,

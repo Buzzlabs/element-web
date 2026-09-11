@@ -59,6 +59,11 @@ export const createSpace = async (
     createOpts: Partial<ICreateRoomOpts> = {},
     otherOpts: Partial<Omit<ICreateOpts, "createOpts">> = {},
 ): Promise<string | null> => {
+    const derivedKeyword =
+        alias && alias.includes(":")
+            ? alias.substring(1, alias.indexOf(":"))
+            : nameToLocalpart(name);
+ 
     return createRoom(client, {
         name,
         topic,
@@ -78,6 +83,11 @@ export const createSpace = async (
         },
         avatar,
         roomType: RoomType.Space,
+        useModuleCreation: true,
+        visible: isPublic,
+        access_type: "public",
+        price: 0,
+        keyword: derivedKeyword,
         historyVisibility: isPublic ? HistoryVisibility.WorldReadable : HistoryVisibility.Invited,
         spinner: false,
         encryption: false,
@@ -206,6 +216,7 @@ const SpaceCreateMenu: React.FC<{
         settingAllowPublicSpaces === false ? Visibility.Private : null,
     );
     const [busy, setBusy] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
 
     const [name, setName] = useState("");
     const spaceNameField = useRef<Field>(null);
@@ -250,13 +261,24 @@ const SpaceCreateMenu: React.FC<{
         }
 
         try {
+            setError(null);
             await createSpace(cli, name, visibility === Visibility.Public, alias, topic, avatar);
-
             onFinished();
-        } catch (e) {
+        } catch (e: any) {
             logger.error(e);
+
+            const status = e?.status;
+            if (status === 403) {
+                setError("Você não tem permissão para criar espaços públicos.");
+            } else if (status === 409) {
+                setError("Já existe um espaço com esse endereço. Escolha outro.");
+            } else {
+                setError("Não foi possível criar o espaço. Tente novamente.");
+            }
+            setBusy(false); // destrava o botão — sem isso fica preso em "criando..."
         }
-    };
+        };
+    
 
     const onSearchClick = (): void => {
         defaultDispatcher.dispatch<OpenSpotlightPayload>({
@@ -291,6 +313,7 @@ const SpaceCreateMenu: React.FC<{
                     </AccessibleButton>
                 )}
             </React.Fragment>
+            
         );
     } else {
         body = (
@@ -330,6 +353,19 @@ const SpaceCreateMenu: React.FC<{
                     showAliasField={visibility === Visibility.Public}
                     aliasFieldRef={spaceAliasField}
                 />
+
+                {error && (
+                    <div
+                        role="alert"
+                        style={{
+                            color: "var(--cpd-color-text-critical-primary, #d00)",
+                            fontSize: "14px",
+                            marginTop: "8px",
+                        }}
+                    >
+                        {error}
+                    </div>
+                )}
 
                 <AccessibleButton kind="primary" onClick={onSpaceCreateClick} disabled={busy}>
                     {busy ? _t("create_space|creating") : _t("action|create")}
