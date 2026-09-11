@@ -1,0 +1,87 @@
+# CD da Buzzlabs (NÃO é workflow upstream — não mesclar/rebasear com o element-web
+# original). Todo commit na develop builda a imagem `element-grupos`, empurra para
+# o registry privado e commita o bump da tag na main do repo Infra; o deploy em si
+# é do ArgoCD (app `matrix-buzzlabs`, chat.buzzlabs.com.br).
+#
+# Roda nos runners efêmeros do ARC no k3d do Hetzner (`runs-on: buzzlabs`).
+name: Buzzlabs CD
+
+on:
+    push:
+        branches: [develop]
+    workflow_dispatch: {}
+
+# Serializa: dois bumps concorrentes na main do Infra dariam corrida de push.
+# Sem cancel-in-progress — um build cancelado no meio do push deixaria imagem
+# publicada sem bump correspondente.
+concurrency: buzzlabs-cd
+
+permissions: {}
+
+env:
+    IMAGE: docker.buzzlabs.com.br/element-grupos
+    DEPLOYMENT: hetzner/k8s/matrix-buzzlabs/element-deployment.yaml
+
+jobs:
+    build-and-deploy:
+        name: Build, push e bump no Infra
+        runs-on: buzzlabs
+        steps:
+            - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+              with:
+                  fetch-depth: 1
+                  persist-credentials: false
+
+            # O scripts/docker-link-repos.sh linka o js-sdk `develop` quando o HEAD
+            # está numa branch chamada `develop`, e isso quebra o build pelo pin do
+            # pnpm. Em HEAD destacado ele não dispara.
+            - name: Destacar o HEAD (evita o auto-link do js-sdk develop)
+              run: git checkout --detach
+
+            - name: Tag datada
+              id: tag
+              run: echo "tag=$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+
+            - name: Login no registry
+              run: echo "${{ secrets.BUZZLABS_REGISTRY_PASSWORD }}" | docker login docker.buzzlabs.com.br -u "${{ vars.BUZZLABS_REGISTRY_USER }}" --password-stdin
+
+            - name: Build e push (cache no registry)
+              run: |
+                  docker buildx create --use
+                  docker buildx build --platform linux/amd64 \
+                    -f apps/web/Dockerfile \
+                    --cache-from type=registry,ref=$IMAGE:cache \
+                    --cache-to   type=registry,ref=$IMAGE:cache,mode=max \
+                    -t $IMAGE:${{ steps.tag.outputs.tag }} --push .
+
+            - name: Token da GitHub App (escrita no Infra)
+              id: app-token
+              uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+              with:
+                  app-id: ${{ vars.BUZZLABS_APP_ID }}
+                  private-key: ${{ secrets.BUZZLABS_APP_PRIVATE_KEY }}
+                  owner: Buzzlabs
+                  repositories: Infra
+
+            - name: Checkout do Infra
+              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+              with:
+                  repository: Buzzlabs/Infra
+                  token: ${{ steps.app-token.outputs.token }}
+                  path: infra
+
+            - name: Commit do bump na main
+              working-directory: infra
+              run: |
+                  set -euo pipefail
+                  TAG="${{ steps.tag.outputs.tag }}"
+                  yq -i ".spec.template.spec.containers[0].image = \"$IMAGE:$TAG\"" "$DEPLOYMENT"
+                  git config user.name  "buzzlabs-ci[bot]"
+                  git config user.email "ci@buzzlabs.com.br"
+                  git commit -am "deploy(element): $TAG"
+                  # Outra automação pode ter commitado na main entre o checkout e aqui.
+                  for i in 1 2 3; do
+                      git push origin main && exit 0
+                      git pull --rebase origin main
+                  done
+                  exit 1
