@@ -11,10 +11,11 @@ on:
         branches: [develop]
     workflow_dispatch: {}
 
-# Serializa: dois bumps concorrentes na main do Infra dariam corrida de push.
-# Sem cancel-in-progress — um build cancelado no meio do push deixaria imagem
-# publicada sem bump correspondente.
-concurrency: buzzlabs-cd
+concurrency:
+    # Serializa: dois bumps concorrentes na main do Infra dariam corrida de push.
+    group: buzzlabs-cd
+    # Um build cancelado no meio do push deixaria imagem publicada sem bump.
+    cancel-in-progress: false
 
 permissions: {}
 
@@ -27,7 +28,7 @@ jobs:
         name: Build, push e bump no Infra
         runs-on: buzzlabs
         steps:
-            - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+            - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
               with:
                   fetch-depth: 1
                   persist-credentials: false
@@ -43,17 +44,24 @@ jobs:
               run: echo "tag=$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
 
             - name: Login no registry
-              run: echo "${{ secrets.BUZZLABS_REGISTRY_PASSWORD }}" | docker login docker.buzzlabs.com.br -u "${{ vars.BUZZLABS_REGISTRY_USER }}" --password-stdin
+              env:
+                  REGISTRY_USER: ${{ vars.BUZZLABS_REGISTRY_USER }}
+                  REGISTRY_PASSWORD: ${{ secrets.BUZZLABS_REGISTRY_PASSWORD }}
+              run: echo "$REGISTRY_PASSWORD" | docker login docker.buzzlabs.com.br -u "$REGISTRY_USER" --password-stdin
 
             - name: Build e push (cache no registry)
+              env:
+                  TAG: ${{ steps.tag.outputs.tag }}
               run: |
                   docker buildx create --use
                   docker buildx build --platform linux/amd64 \
                     -f apps/web/Dockerfile \
-                    --cache-from type=registry,ref=$IMAGE:cache \
-                    --cache-to   type=registry,ref=$IMAGE:cache,mode=max \
-                    -t $IMAGE:${{ steps.tag.outputs.tag }} --push .
+                    --cache-from type=registry,ref="$IMAGE:cache" \
+                    --cache-to   type=registry,ref="$IMAGE:cache",mode=max \
+                    -t "$IMAGE:$TAG" --push .
 
+            # Token escopado: só conteúdo, só o repo Infra. Sem isso o token herda
+            # todas as permissões da instalação da App.
             - name: Token da GitHub App (escrita no Infra)
               id: app-token
               uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
@@ -62,26 +70,33 @@ jobs:
                   private-key: ${{ secrets.BUZZLABS_APP_PRIVATE_KEY }}
                   owner: Buzzlabs
                   repositories: Infra
+                  permission-contents: write
 
             - name: Checkout do Infra
-              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
               with:
                   repository: Buzzlabs/Infra
                   token: ${{ steps.app-token.outputs.token }}
                   path: infra
+                  # O push abaixo passa o token explicitamente — nada fica gravado
+                  # no .git/config depois do checkout.
+                  persist-credentials: false
 
             - name: Commit do bump na main
               working-directory: infra
+              env:
+                  TAG: ${{ steps.tag.outputs.tag }}
+                  GH_TOKEN: ${{ steps.app-token.outputs.token }}
               run: |
                   set -euo pipefail
-                  TAG="${{ steps.tag.outputs.tag }}"
                   yq -i ".spec.template.spec.containers[0].image = \"$IMAGE:$TAG\"" "$DEPLOYMENT"
                   git config user.name  "buzzlabs-ci[bot]"
                   git config user.email "ci@buzzlabs.com.br"
                   git commit -am "deploy(element): $TAG"
+                  REMOTE="https://x-access-token:$GH_TOKEN@github.com/Buzzlabs/Infra.git"
                   # Outra automação pode ter commitado na main entre o checkout e aqui.
-                  for i in 1 2 3; do
-                      git push origin main && exit 0
-                      git pull --rebase origin main
+                  for _ in 1 2 3; do
+                      git push "$REMOTE" HEAD:main && exit 0
+                      git pull --rebase "$REMOTE" main
                   done
                   exit 1
