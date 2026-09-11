@@ -12,7 +12,7 @@ import {
     type RoomListItemViewActions,
     type Section,
 } from "@element-hq/web-shared-components";
-import { RoomEvent } from "matrix-js-sdk/src/matrix";
+import { RoomEvent, RoomStateEvent } from "matrix-js-sdk/src/matrix";
 import { CallType } from "matrix-js-sdk/src/webrtc/call";
 
 import type { Room, MatrixClient, RoomMember } from "matrix-js-sdk/src/matrix";
@@ -41,6 +41,7 @@ import { type Call, CallEvent } from "../../models/Call";
 import RoomListStoreV3 from "../../stores/room-list-v3/RoomListStoreV3";
 import { getCustomSectionData, isDefaultSectionTag } from "../../stores/room-list-v3/section";
 import { _t } from "../../languageHandler";
+import { getLiveWidget } from "../../utils/live/liveWidget";
 
 interface RoomItemProps {
     room: Room;
@@ -98,6 +99,7 @@ export class RoomListItemViewModel
         // Subscribe to room-specific events
         this.disposables.trackListener(props.room, RoomEvent.Name, this.onRoomChanged);
         this.disposables.trackListener(props.room, RoomEvent.Tags, this.onRoomChanged);
+        this.disposables.trackListener(props.room, RoomStateEvent.Events, this.onRoomChanged);
 
         const orderSectionsRef = SettingsStore.watchSetting("RoomList.OrderedCustomSections", null, () =>
             this.onOrderedCustomSectionsChange(),
@@ -299,6 +301,7 @@ export class RoomListItemViewModel
             name: room.name,
             isBold: notifState.hasAnyNotificationOrActivity,
             messagePreview,
+            isLive: !!getLiveWidget(room.client, room.roomId),
             notification: {
                 hasAnyNotificationOrActivity: notifState.hasAnyNotificationOrActivity || hasParticipantsInCall,
                 isUnsentMessage: notifState.isUnsentMessage,

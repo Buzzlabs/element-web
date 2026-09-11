@@ -72,7 +72,7 @@ import AccessibleButton, { type ButtonEvent } from "../views/elements/Accessible
 import { TimelineRenderingType, MainSplitContentType } from "../../contexts/RoomContext";
 import { E2EStatus, shieldStatusForRoom } from "../../utils/ShieldUtils";
 import { Action } from "../../dispatcher/actions";
-import { type IMatrixClientCreds } from "../../MatrixClientPeg";
+import { MatrixClientPeg, type IMatrixClientCreds } from "../../MatrixClientPeg";
 import { useMatrixClientContext } from "../../contexts/MatrixClientContext";
 import ScrollPanel from "./ScrollPanel";
 import TimelinePanel from "./TimelinePanel";
@@ -147,6 +147,7 @@ import { EventPresentationContextProvider } from "../../utils/EventPresentationC
 import { VodsDrawerBanner } from "../views/vods_drawer/VodsDrawerBanner";
 import { VodsDrawer, PEEK_HEIGHT } from "../views/vods_drawer/VodsDrawer";
 import { getRoomFeatures } from "../../utils/admin/roomFeatures";
+import LiveStreamWidget from "../views/rooms/LiveStreamWidget.tsx";
 
 const DEBUG = false;
 const PREVENT_MULTIPLE_JITSI_WITHIN = 30_000;
@@ -302,6 +303,7 @@ export interface IRoomState {
     vodsDrawerOpen: boolean;
     vodsEnabled: boolean;
     eventsEnabled: boolean;
+    liveEnabled: boolean;
 }
 
 interface LocalRoomViewProps {
@@ -523,6 +525,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
             vodsDrawerOpen: false,
             vodsEnabled: false,
             eventsEnabled: false,
+            liveEnabled: false,
         };
     }
 
@@ -1052,9 +1055,11 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
         this.setState({
             vodsEnabled: !!features["vods"],
             eventsEnabled: !!features["events"],
+            liveEnabled: !!features["live"],
         });
     } catch {
         this.setState({ vodsEnabled: false, eventsEnabled: false });
+        this.setState({ vodsEnabled: false, eventsEnabled: false, liveEnabled: false });
     }
 };
 
@@ -2772,6 +2777,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
         }
 
         return (
+            <>
             <ScopedRoomContextProvider {...this.state} roomViewStore={this.roomViewStore}>
                 <div
                     className={mainClasses}
@@ -2808,6 +2814,18 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
                     </ErrorBoundary>
                 </div>
             </ScopedRoomContextProvider>
+            {this.state.liveEnabled && this.state.room && (
+                    <LiveStreamWidget
+                        room={this.state.room}
+                        canManage={
+                            this.state.room.currentState.maySendStateEvent(
+                                "im.vector.modular.widgets",
+                                MatrixClientPeg.safeGet().getUserId() ?? "",
+                            )
+                        }
+                    />
+                )}
+            </>
         );
     }
 }

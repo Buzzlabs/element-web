@@ -1,21 +1,18 @@
 import { MatrixClientPeg } from "../../MatrixClientPeg";
 
-/**
- * Client for the `room_features` Synapse module.
- * Mirrors the style of roomBusiness.ts.
- *
- * Features toggle optional per-room tabs (VODs, events, ...). The tab only
- * shows when its feature is enabled for that room. Writing requires a global
- * Synapse admin (the module returns 403 otherwise).
- */
-
-/** Feature keys the UI knows about, with a human label. Add new features here. */
 export const ROOM_FEATURES: ReadonlyArray<{ key: string; label: string }> = [
     { key: "vods", label: "Aba de VODs" },
     { key: "events", label: "Calendário de eventos" },
+    { key: "live", label: "Transmissão ao vivo" },
 ];
 
 export type RoomFeaturesMap = Record<string, boolean>;
+
+
+export interface StreamInfo {
+    room_id: string;
+    playback_url: string | null;
+}
 
 function baseUrl(): string {
     return MatrixClientPeg.safeGet().getHomeserverUrl();
@@ -39,10 +36,6 @@ async function readError(res: Response): Promise<string | undefined> {
     }
 }
 
-/**
- * Returns every feature flag for a room as a map { feature: enabled }.
- * Missing features are absent from the map (treated as disabled).
- */
 export async function getRoomFeatures(roomId: string): Promise<RoomFeaturesMap> {
     const res = await fetch(`${baseUrl()}/_synapse/room_features/list`, {
         method: "POST",
@@ -56,9 +49,6 @@ export async function getRoomFeatures(roomId: string): Promise<RoomFeaturesMap> 
     return (body?.features ?? {}) as RoomFeaturesMap;
 }
 
-/**
- * Enables/disables a single feature for a room. Admin only.
- */
 export async function setRoomFeature(roomId: string, feature: string, enabled: boolean): Promise<void> {
     const res = await fetch(`${baseUrl()}/_synapse/room_features/set`, {
         method: "POST",
@@ -70,15 +60,6 @@ export async function setRoomFeature(roomId: string, feature: string, enabled: b
     }
 }
 
-/* ----------------------------- Room calendar ----------------------------- */
-/**
- * Which Google Calendar a room uses for its events (schedule_service module).
- * Reading the id is cheap (no Google call); listing events is separate.
- */
-
-/**
- * Returns the calendar id configured for a room, or null if none is set.
- */
 export async function getRoomCalendar(roomId: string): Promise<{ calendarId: string | null }> {
     const res = await fetch(`${baseUrl()}/_synapse/schedule_service/get_calendar`, {
         method: "POST",
@@ -92,9 +73,7 @@ export async function getRoomCalendar(roomId: string): Promise<{ calendarId: str
     return { calendarId: body?.calendarId ?? null };
 }
 
-/**
- * Sets which Google Calendar a room uses. Admin only.
- */
+
 export async function setRoomCalendar(roomId: string, calendarId: string): Promise<void> {
     const res = await fetch(`${baseUrl()}/_synapse/schedule_service/set_calendar`, {
         method: "POST",
@@ -104,4 +83,29 @@ export async function setRoomCalendar(roomId: string, calendarId: string): Promi
     if (!res.ok) {
         throw new Error((await readError(res)) ?? `schedule_service/set_calendar failed with status ${res.status}`);
     }
+}
+
+
+export async function getStream(roomId: string): Promise<StreamInfo> {
+    const res = await fetch(`${baseUrl()}/_synapse/room_streams_service/get_stream`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ room_id: roomId }),
+    });
+    if (!res.ok) {
+        throw new Error((await readError(res)) ?? `get_stream failed with status ${res.status}`);
+    }
+    return res.json();
+}
+
+export async function setStream(roomId: string, playbackUrl: string): Promise<StreamInfo> {
+    const res = await fetch(`${baseUrl()}/_synapse/room_streams_service/set_stream`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ room_id: roomId, playback_url: playbackUrl }),
+    });
+    if (!res.ok) {
+        throw new Error((await readError(res)) ?? `set_stream failed with status ${res.status}`);
+    }
+    return res.json();
 }
