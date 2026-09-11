@@ -3,7 +3,11 @@
 # o registry privado e commita o bump da tag na main do repo Infra; o deploy em si
 # é do ArgoCD (app `matrix-buzzlabs`, chat.buzzlabs.com.br).
 #
-# Roda nos runners efêmeros do ARC no k3d do Hetzner (`runs-on: buzzlabs`).
+# Roda em runner do GitHub, não no ARC do Hetzner: este repo é público e grupo de
+# runner de organização não atende repositório público. Como o repo é público os
+# minutos são gratuitos, o runner é maior que o pod do ARC (que tem 2 CPU / 8Gi) e
+# o build não disputa CPU com o Jitsi no nó do Hetzner. O registry é alcançável
+# pela internet (autenticado), então o push funciona daqui.
 name: Buzzlabs CD
 
 on:
@@ -31,7 +35,7 @@ env:
 jobs:
     build-and-deploy:
         name: Build, push e bump no Infra
-        runs-on: buzzlabs
+        runs-on: ubuntu-24.04
         # O workflow_dispatch aceita qualquer ref: sem esta guarda, um run manual a
         # partir de uma branch de feature buildaria aquele código e o deployaria em
         # chat.buzzlabs.com.br. Rodar de outra ref fica visível como job pulado.
@@ -58,15 +62,16 @@ jobs:
                   REGISTRY_PASSWORD: ${{ secrets.BUZZLABS_REGISTRY_PASSWORD }}
               run: echo "$REGISTRY_PASSWORD" | docker login docker.buzzlabs.com.br -u "$REGISTRY_USER" --password-stdin
 
-            - name: Build e push (cache no registry)
+            # Sem cache de propósito: o build a frio levou ~3min no job `Docker Buildx`
+            # do PR #19, e cache de registry empurraria ~1-2GB por commit para o
+            # Hetzner, cujo GC do registry já está pendente (ver hetzner/STATE.md).
+            - name: Build e push
               env:
                   TAG: ${{ steps.tag.outputs.tag }}
               run: |
                   docker buildx create --use
                   docker buildx build --platform linux/amd64 \
                     -f apps/web/Dockerfile \
-                    --cache-from type=registry,ref="$IMAGE:cache" \
-                    --cache-to   type=registry,ref="$IMAGE:cache",mode=max \
                     -t "$IMAGE:$TAG" --push .
 
             # Token escopado: só conteúdo, só o repo Infra. Sem isso o token herda
