@@ -8,10 +8,12 @@ export const ROOM_FEATURES: ReadonlyArray<{ key: string; label: string }> = [
 
 export type RoomFeaturesMap = Record<string, boolean>;
 
+export type StreamProvider = "fixed" | "youtube";
 
 export interface StreamInfo {
     room_id: string;
     playback_url: string | null;
+    provider: StreamProvider;
 }
 
 function baseUrl(): string {
@@ -98,14 +100,49 @@ export async function getStream(roomId: string): Promise<StreamInfo> {
     return res.json();
 }
 
-export async function setStream(roomId: string, playbackUrl: string): Promise<StreamInfo> {
+/**
+ * playbackUrl é ignorada pelo backend quando provider === "youtube" (nesse
+ * modo não existe URL fixa a guardar). Pode ser passada como string vazia
+ * nesse caso.
+ */
+export async function setStream(
+    roomId: string,
+    playbackUrl: string,
+    provider: StreamProvider = "fixed",
+): Promise<StreamInfo> {
     const res = await fetch(`${baseUrl()}/_synapse/room_streams_service/set_stream`, {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({ room_id: roomId, playback_url: playbackUrl }),
+        body: JSON.stringify({ room_id: roomId, playback_url: playbackUrl, provider }),
     });
     if (!res.ok) {
         throw new Error((await readError(res)) ?? `set_stream failed with status ${res.status}`);
+    }
+    return res.json();
+}
+
+/* ----------------------------- YouTube Live ----------------------------- */
+/**
+ * Cria uma transmissão nova no YouTube (youtube_live_service). Admin only —
+ * o backend recusa com 403 se quem chamou não for admin.
+ */
+
+export interface YoutubeBroadcastInfo {
+    room_id: string;
+    broadcast_id: string;
+    watch_url: string;
+    ingestion_address: string;
+    stream_key: string;
+}
+
+export async function startYoutubeBroadcast(roomId: string, title: string): Promise<YoutubeBroadcastInfo> {
+    const res = await fetch(`${baseUrl()}/_synapse/youtube_live_service/start_broadcast`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ room_id: roomId, title }),
+    });
+    if (!res.ok) {
+        throw new Error((await readError(res)) ?? `start_broadcast failed with status ${res.status}`);
     }
     return res.json();
 }
