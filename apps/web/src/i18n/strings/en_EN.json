@@ -716,14 +716,12 @@
         "name_required": "Please enter a name for the space",
         "personal_space": "Just me",
         "personal_space_description": "A private space to organise your rooms",
-        "private_description": "Invite only, personal or for your team",
         "private_heading": "Your private space",
         "private_only_heading": "Your space",
         "private_personal_description": "Make sure the right people have access to %(name)s",
         "private_personal_heading": "Who are you working with?",
         "private_space": "Me and my teammates",
         "private_space_description": "A private space for you and your teammates",
-        "public_description": "Anyone can join, best for communities",
         "public_heading": "Your public space",
         "search_public_button": "Search for public spaces",
         "setup_rooms_community_description": "Let's create some rooms to get started.",
@@ -3264,16 +3262,13 @@
     },
     "spotlight_dialog": {
         "cant_find_person_helpful_hint": "If you can't see who you're looking for, send them your invite link.",
-        "cant_find_room_helpful_hint": "If you can't find the room you're looking for, ask for an invite or create a new room.",
         "copy_link_text": "Copy invite link",
         "count_of_members": {
             "one": "%(count)s Member",
             "other": "%(count)s Members"
         },
-        "create_new_room_button": "Create new room",
         "failed_querying_public_rooms": "Failed to query public rooms",
         "failed_querying_public_spaces": "Failed to query public spaces",
-        "group_chat_section_title": "Other options",
         "heading_with_query": "Use \"%(query)s\" to search",
         "heading_without_query": "Search for",
         "join_button_text": "Join %(roomAddress)s",
@@ -3288,8 +3283,7 @@
         "result_may_be_hidden_privacy_warning": "Some results may be hidden for privacy",
         "result_may_be_hidden_warning": "Some results may be hidden",
         "search_dialog": "Search Dialog",
-        "spaces_title": "Spaces you're in",
-        "start_group_chat_button": "Start a group chat"
+        "spaces_title": "Spaces you're in"
     },
     "stickers": {
         "empty": "You don't currently have any stickerpacks enabled",
