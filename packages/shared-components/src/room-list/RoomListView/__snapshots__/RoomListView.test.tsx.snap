@@ -3392,12 +3392,8 @@ exports[`<RoomListView /> > renders EmptyWithoutCreatePermission story 1`] = `
           <span
             class="RoomListEmptyStateView-module_description"
           >
-            Get started by messaging someone
+            Explore public rooms to find one to join
           </span>
-          <div
-            class="Flex-module_flex RoomListEmptyStateView-module_defaultPlaceholder"
-            style="--mx-flex-display: flex; --mx-flex-direction: column; --mx-flex-align: center; --mx-flex-justify: center; --mx-flex-gap: var(--cpd-space-4x); --mx-flex-wrap: nowrap;"
-          />
         </div>
       </div>
     </div>
