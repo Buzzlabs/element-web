@@ -42,24 +42,22 @@ export const RoomListEmptyStateView: React.FC<RoomListEmptyStateViewProps> = ({ 
                         : _t("room_list|empty|no_chats_description_no_room_rights")
                 }
             >
-                <Flex
-                    className={styles.defaultPlaceholder}
-                    align="center"
-                    justify="center"
-                    direction="column"
-                    gap="var(--cpd-space-4x)"
-                >
-                    {snapshot.canCreateRoom && (
+                {snapshot.canCreateRoom && (
+                    <Flex
+                        className={styles.defaultPlaceholder}
+                        align="center"
+                        justify="center"
+                        direction="column"
+                        gap="var(--cpd-space-4x)"
+                    >
                         <Button size="md" kind="secondary" Icon={ChatIcon} onClick={vm.createChatRoom}>
                             {_t("action|start_chat")}
                         </Button>
-                    )}
-                    {snapshot.canCreateRoom && (
                         <Button size="md" kind="secondary" Icon={RoomIcon} onClick={vm.createRoom}>
                             {_t("action|new_room")}
                         </Button>
-                    )}
-                </Flex>
+                    </Flex>
+                )}
             </GenericPlaceholder>
         );
     }
