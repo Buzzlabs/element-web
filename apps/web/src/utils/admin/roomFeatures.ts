@@ -146,3 +146,14 @@ export async function startYoutubeBroadcast(roomId: string, title: string): Prom
     }
     return res.json();
 }
+
+export async function clearYoutubeBroadcast(roomId: string): Promise<void> {
+    const res = await fetch(`${baseUrl()}/_synapse/room_streams_service/clear_youtube_broadcast`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ room_id: roomId }),
+    });
+    if (!res.ok) {
+        throw new Error((await readError(res)) ?? `clear_youtube_broadcast failed with status ${res.status}`);
+    }
+}

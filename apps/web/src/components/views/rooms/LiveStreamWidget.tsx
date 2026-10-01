@@ -7,6 +7,8 @@ import Modal from "../../../Modal";
 import QuestionDialog from "../dialogs/QuestionDialog";
 import ErrorDialog from "../dialogs/ErrorDialog";
 import { getLiveWidget, stopLive } from "../../../utils/live/liveWidget";
+import { clearYoutubeBroadcast } from "../../../utils/admin/roomFeatures";
+import { logger } from "matrix-js-sdk/src/logger";
 import { useMatrixClientContext } from "../../../contexts/MatrixClientContext";
 
 interface IProps {
@@ -130,8 +132,18 @@ const LiveStreamWidget: React.FC<IProps> = ({ room, canManage }) => {
         }).finished.then(async ([confirmed]) => {
             if (!confirmed) return;
             setBusy(true);
-            try {
+             try {
                 await stopLive(cli, room.roomId);
+                // stopLive só remove o widget do Matrix; sem isso, o backend
+                // continuaria reportando o broadcast encerrado como atual
+                // (get_stream não atualiza sozinho). Seguro de chamar mesmo
+                // em salas com provider "fixed" -- não há nada pra limpar
+                // nesse caso, o UPDATE não tem efeito.
+                try {
+                    await clearYoutubeBroadcast(room.roomId);
+                } catch (e) {
+                    logger.error("Falha ao limpar broadcast do YouTube:", e);
+                }
             } catch (e) {
                 Modal.createDialog(ErrorDialog, {
                     title: "Erro",

@@ -48,7 +48,7 @@ import {
     getRoomFeatures, setRoomFeature, ROOM_FEATURES,
     getRoomCalendar, setRoomCalendar,
     getStream, setStream,
-    startYoutubeBroadcast,
+    startYoutubeBroadcast, clearYoutubeBroadcast,
 } from "../../../../../utils/admin/roomFeatures";
 import { getLiveWidget, startLive, stopLive } from "../../../../../utils/live/liveWidget"
 import ToggleSwitch from "../../../elements/ToggleSwitch";
@@ -162,6 +162,16 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
             this.setState({ streamBusy: true });
             try {
                 await stopLive(this.props.room.client, this.props.room.roomId);
+                // stopLive só remove o widget do Matrix; sem isso, o backend
+                // continuaria reportando o broadcast encerrado como atual
+                // (get_stream não atualiza sozinho).
+                if (this.state.streamProvider === "youtube") {
+                    try {
+                        await clearYoutubeBroadcast(this.props.room.roomId);
+                    } catch (e) {
+                        logger.error("Falha ao limpar broadcast do YouTube:", e);
+                    }
+                }
                 this.refreshLiveState();
             } catch (e) {
                 logger.error("Falha ao encerrar transmissão:", e);
