@@ -7,6 +7,9 @@ import Modal from "../../../Modal";
 import QuestionDialog from "../dialogs/QuestionDialog";
 import ErrorDialog from "../dialogs/ErrorDialog";
 import { getLiveWidget, stopLive } from "../../../utils/live/liveWidget";
+import { getStream, stopYoutubeBroadcast, type StreamProvider } from "../../../utils/admin/roomFeatures";
+import { clearYoutubeBroadcast } from "../../../utils/admin/roomFeatures";
+import { logger } from "matrix-js-sdk/src/logger";
 import { useMatrixClientContext } from "../../../contexts/MatrixClientContext";
 
 interface IProps {
@@ -41,6 +44,13 @@ function useLiveWidget(room: Room): { title: string; url: string } | null {
 const LiveStreamWidget: React.FC<IProps> = ({ room, canManage }) => {
     const cli = useMatrixClientContext();
     const live = useLiveWidget(room);
+    const [provider, setProvider] = useState<StreamProvider | null>(null);
+    useEffect(() => {
+        getStream(room.roomId)
+            .then((info) => setProvider(info.provider))
+            .catch(() => setProvider(null));
+    }, [room.roomId]);
+
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef = useRef<Hls | null>(null);
@@ -123,25 +133,42 @@ const LiveStreamWidget: React.FC<IProps> = ({ room, canManage }) => {
     }, [live?.url]);
 
     const onStop = useCallback((): void => {
+        const isYoutube = provider === "youtube";
+
         Modal.createDialog(QuestionDialog, {
             title: "Encerrar transmissão?",
-            description: "Tem certeza que deseja encerrar a transmissão ao vivo?",
+            description: isYoutube
+                ? "Isso vai encerrar a transmissão no YouTube para todos os " +
+                  "espectadores, inclusive fora do Element. Essa ação não pode " +
+                  "ser desfeita."
+                : "Tem certeza que deseja encerrar a transmissão ao vivo?",
             button: "Encerrar",
         }).finished.then(async ([confirmed]) => {
             if (!confirmed) return;
             setBusy(true);
             try {
+                if (isYoutube) {
+                    // Encerra de verdade no YouTube antes de remover o
+                    // widget -- se o YouTube recusar, nem o widget nem o
+                    // registro local são tocados.
+                    await stopYoutubeBroadcast(room.roomId);
+                }
                 await stopLive(cli, room.roomId);
             } catch (e) {
+                logger.error("Falha ao encerrar transmissão:", e);
                 Modal.createDialog(ErrorDialog, {
                     title: "Erro",
-                    description: e instanceof Error ? e.message : "Não foi possível encerrar a transmissão.",
+                    description:
+                        e instanceof Error
+                            ? e.message
+                            : "Não foi possível encerrar a transmissão. Tente novamente, ou " +
+                              "encerre manualmente pelo YouTube Studio.",
                 });
             } finally {
                 setBusy(false);
             }
         });
-    }, [cli, room.roomId]);
+    }, [cli, room.roomId, provider]);
 
     if (!live) return null;
 
