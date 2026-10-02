@@ -157,3 +157,14 @@ export async function clearYoutubeBroadcast(roomId: string): Promise<void> {
         throw new Error((await readError(res)) ?? `clear_youtube_broadcast failed with status ${res.status}`);
     }
 }
+
+export async function stopYoutubeBroadcast(roomId: string): Promise<void> {
+    const res = await fetch(`${baseUrl()}/_synapse/youtube_live_service/stop_broadcast`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ room_id: roomId }),
+    });
+    if (!res.ok) {
+        throw new Error((await readError(res)) ?? `stop_broadcast failed with status ${res.status}`);
+    }
+}

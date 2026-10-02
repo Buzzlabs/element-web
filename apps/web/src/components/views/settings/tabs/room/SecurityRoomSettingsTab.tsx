@@ -48,7 +48,7 @@ import {
     getRoomFeatures, setRoomFeature, ROOM_FEATURES,
     getRoomCalendar, setRoomCalendar,
     getStream, setStream,
-    startYoutubeBroadcast, clearYoutubeBroadcast,
+     startYoutubeBroadcast, stopYoutubeBroadcast,
 } from "../../../../../utils/admin/roomFeatures";
 import { getLiveWidget, startLive, stopLive } from "../../../../../utils/live/liveWidget"
 import ToggleSwitch from "../../../elements/ToggleSwitch";
@@ -157,24 +157,44 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
     };
 
     private onToggleLive = async (): Promise<void> => {
-        // encerrar: não precisa perguntar nada
+        // encerrar
         if (this.state.isLive) {
+            const isYoutube = this.state.streamProvider === "youtube";
+
+            const { finished } = Modal.createDialog(QuestionDialog, {
+                title: "Encerrar transmissão?",
+                description: isYoutube
+                    ? "Isso vai encerrar a transmissão no YouTube para todos os " +
+                      "espectadores, inclusive fora do Element. Essa ação não pode " +
+                      "ser desfeita."
+                    : "Tem certeza que deseja encerrar a transmissão ao vivo?",
+                button: "Encerrar",
+            });
+
+            const [confirmed] = await finished;
+            if (!confirmed) return;
+
             this.setState({ streamBusy: true });
             try {
-                await stopLive(this.props.room.client, this.props.room.roomId);
-                // stopLive só remove o widget do Matrix; sem isso, o backend
-                // continuaria reportando o broadcast encerrado como atual
-                // (get_stream não atualiza sozinho).
-                if (this.state.streamProvider === "youtube") {
-                    try {
-                        await clearYoutubeBroadcast(this.props.room.roomId);
-                    } catch (e) {
-                        logger.error("Falha ao limpar broadcast do YouTube:", e);
-                    }
+                if (isYoutube) {
+                    // Encerra de verdade no YouTube antes de remover o
+                    // widget -- se o YouTube recusar, nem o widget nem o
+                    // registro local são tocados, e o erro aparece pro
+                    // admin (ver stopYoutubeBroadcast).
+                    await stopYoutubeBroadcast(this.props.room.roomId);
                 }
+                await stopLive(this.props.room.client, this.props.room.roomId);
                 this.refreshLiveState();
             } catch (e) {
                 logger.error("Falha ao encerrar transmissão:", e);
+                Modal.createDialog(ErrorDialog, {
+                    title: "Erro",
+                    description:
+                        e instanceof Error
+                            ? e.message
+                            : "Não foi possível encerrar a transmissão. Tente novamente, ou " +
+                              "encerre manualmente pelo YouTube Studio.",
+                });
             } finally {
                 this.setState({ streamBusy: false });
             }
