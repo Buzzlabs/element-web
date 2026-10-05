@@ -90,6 +90,10 @@ export const NoSpaceMenu: Story = {
 
 export const NoComposeMenu: Story = {
     args: {
+        // A user who can't create rooms. canCreateVideoRoom follows
+        // canCreateRoom in the view model, so it is false too.
+        canCreateRoom: false,
+        canCreateVideoRoom: false,
         displayComposeMenu: false,
     },
 };

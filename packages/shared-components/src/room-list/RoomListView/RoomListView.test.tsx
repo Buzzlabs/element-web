@@ -65,6 +65,20 @@ describe("<RoomListView />", () => {
         expect(container).toMatchSnapshot();
     });
 
+        it("hides the create actions when the user cannot create rooms", () => {
+        renderWithMockContext(<EmptyWithoutCreatePermission />);
+        expect(screen.queryByRole("button", { name: "Start chat" })).toBeNull();
+        expect(screen.queryByRole("button", { name: "New room" })).toBeNull();
+    });
+
+    it("shows the create actions when the user can create rooms", () => {
+        // control for the test above: proves the button names are the real ones,
+        // so a missing button can't just be a typo in the query
+        renderWithMockContext(<Empty />);
+        expect(screen.queryByRole("button", { name: "Start chat" })).not.toBeNull();
+        expect(screen.queryByRole("button", { name: "New room" })).not.toBeNull();
+    });
+
     it("renders WithActiveFilter story", () => {
         const { container } = renderWithMockContext(<WithActiveFilter />);
         expect(container).toMatchSnapshot();
