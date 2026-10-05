@@ -318,7 +318,9 @@ function computeHeaderSpaceState(
 
     const canCreateRoom = hasCreateRoomRights(matrixClient, activeSpace);
     const canCreateVideoRoom = getCanCreateVideoRoom(canCreateRoom);
-    const displayComposeMenu = isAdmin; // canCreateRoom;
+    // Room/space creation is restricted to global admins in this fork, not the native Matrix per-space permission —
+    // so we gate the compose menu on isAdmin rather than canCreateRoom.
+    const displayComposeMenu = isAdmin; 
     const displaySpaceMenu = Boolean(activeSpace);
     const canInviteInSpace = Boolean(
         activeSpace?.getJoinRule() === JoinRule.Public || activeSpace?.canInvite(matrixClient.getSafeUserId()),

@@ -117,7 +117,7 @@
         "empty": {
             "no_chats": "No chats yet",
             "no_chats_description": "Get started by messaging someone or by creating a room",
-            "no_chats_description_no_room_rights": "Get started by messaging someone",
+            "no_chats_description_no_room_rights": "Explore public rooms to find one to join",
             "no_favourites": "You don't have favourite chats yet",
             "no_favourites_description": "You can add a chat to your favourites in the chat settings",
             "no_invites": "You don't have any unread invites",
