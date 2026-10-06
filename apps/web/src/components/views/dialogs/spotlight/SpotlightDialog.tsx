@@ -7,7 +7,7 @@ Please see LICENSE files in the repository root for full details.
 */
 
 import { type WebSearch as WebSearchEvent } from "@matrix-org/analytics-events/types/typescript/WebSearch";
-import { capitalize, sum } from "lodash";
+import { sum } from "lodash";
 import {
     type HierarchyRoom,
     type IPublicRoomsChunkRoom,
@@ -37,7 +37,6 @@ import {
     UserProfileIcon,
     FavouriteIcon,
     HomeIcon,
-    GroupIcon,
     CloseIcon,
     LinkIcon,
 } from "@vector-im/compound-design-tokens/assets/web/icons";
@@ -64,7 +63,6 @@ import { _t } from "../../../../languageHandler";
 import { MatrixClientPeg } from "../../../../MatrixClientPeg";
 import { PosthogAnalytics } from "../../../../PosthogAnalytics";
 import { getCachedRoomIdForAlias } from "../../../../RoomAliasCache";
-import { showStartChatInviteDialog } from "../../../../RoomInvite";
 import { SettingLevel } from "../../../../settings/SettingLevel";
 import SettingsStore from "../../../../settings/SettingsStore";
 import { BreadcrumbsStore } from "../../../../stores/BreadcrumbsStore";
@@ -1238,48 +1236,9 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
             hiddenResultsSection = (
                 <div className="mx_SpotlightDialog_section mx_SpotlightDialog_hiddenResults" role="group">
                     <h4>{_t("spotlight_dialog|result_may_be_hidden_warning")}</h4>
-                    {/* <div className="mx_SpotlightDialog_otherSearches_messageSearchText">
-                        {_t("spotlight_dialog|cant_find_room_helpful_hint")}
-                    </div>
-                    <Option
-                        id="mx_SpotlightDialog_button_createNewRoom"
-                        className="mx_SpotlightDialog_createRoom"
-                        onClick={() =>
-                            defaultDispatcher.dispatch({
-                                action: Action.CreateRoom,
-                                public: true,
-                                defaultName: capitalize(trimmedQuery),
-                            })
-                        }
-                    >
-                        <span className="mx_AccessibleButton mx_AccessibleButton_hasKind mx_AccessibleButton_kind_primary_outline">
-                            <RoomIcon />
-                            {_t("spotlight_dialog|create_new_room_button")}
-                        </span>
-                    </Option> */}
                 </div>
             );
         }
-
-        // let groupChatSection: JSX.Element | undefined;
-        // if (filter === Filter.People) {
-        //     groupChatSection = (
-        //         <div
-        //             className="mx_SpotlightDialog_section mx_SpotlightDialog_otherSearches"
-        //             role="group"
-        //             aria-labelledby="mx_SpotlightDialog_section_groupChat"
-        //         >
-        //             <h4 id="mx_SpotlightDialog_section_groupChat">{_t("spotlight_dialog|group_chat_section_title")}</h4>
-        //             <Option
-        //                 id="mx_SpotlightDialog_button_startGroupChat"
-        //                 onClick={() => showStartChatInviteDialog(trimmedQuery)}
-        //             >
-        //                 <GroupIcon />
-        //                 {_t("spotlight_dialog|start_group_chat_button")}
-        //             </Option>
-        //         </div>
-        //     );
-        // }
 
         content = (
             <>
