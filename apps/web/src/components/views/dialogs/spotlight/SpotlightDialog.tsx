@@ -29,7 +29,6 @@ import React, {
     useRef,
     useState,
 } from "react";
-import sanitizeHtml from "sanitize-html";
 import {
     ChatIcon,
     RoomIcon,
@@ -208,19 +207,6 @@ const isPublicRoomResult = (result: any): result is IPublicRoomResult => !!resul
 const isDiscoverRoomResult = (result: any): result is IDiscoverRoomResult => !!result?.discoverRoom;
 const isMemberResult = (result: any): result is IMemberResult => !!result?.member;
 
-const toPublicRoomResult = (publicRoom: IPublicRoomsChunkRoom): IPublicRoomResult => ({
-    publicRoom,
-    section: Section.PublicRoomsAndSpaces,
-    filter: [Filter.PublicRooms, Filter.PublicSpaces],
-    query: filterBoolean([
-        publicRoom.room_id.toLowerCase(),
-        publicRoom.canonical_alias?.toLowerCase(),
-        publicRoom.name?.toLowerCase(),
-        sanitizeHtml(publicRoom.topic?.toLowerCase() ?? "", { allowedTags: [] }),
-        ...(publicRoom.aliases?.map((it) => it.toLowerCase()) || []),
-    ]),
-});
-
 const toDiscoverRoomResult = (discoverRoom: DiscoverRoom): IDiscoverRoomResult => {
     const isSpace = discoverRoom.room_kind === "space";
 
@@ -392,7 +378,6 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
 
     const {
         loading: publicRoomsLoading,
-        publicRooms,
         protocols,
         config,
         setConfig,
