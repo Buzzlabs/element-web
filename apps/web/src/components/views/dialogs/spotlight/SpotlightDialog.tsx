@@ -503,13 +503,6 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
             possibleResults.forEach((entry) => {
                 if (isPublicRoomResult(entry) || isDiscoverRoomResult(entry)) {
                     results[entry.section].push(entry);
-                } else if (
-                    filter === Filter.PublicRooms &&
-                    showSpacesChip &&
-                    isDiscoverRoomResult(entry) &&
-                    entry.discoverRoom.room_kind === "space"
-                ) {
-                    results[entry.section].push(entry);
                 }
             });
         } else if (filter === Filter.People) {
