@@ -332,24 +332,6 @@ test.describe("Spotlight", () => {
         }
     });
 
-    test("should allow opening group chat dialog", async ({ page, app, bot2 }) => {
-        const spotlight = await app.openSpotlight();
-        await page.waitForTimeout(500); // wait for the dialog to settle
-        await spotlight.filter(Filter.People);
-        await spotlight.search(bot2.credentials.displayName);
-        await page.waitForTimeout(3000); // wait for the dialog to settle
-
-        const resultLocator = spotlight.results;
-        await expect(resultLocator).toHaveCount(1);
-        await expect(resultLocator.first()).toContainText(bot2.credentials.displayName);
-
-        await expect(spotlight.dialog.locator("#mx_SpotlightDialog_button_startGroupChat")).toContainText(
-            "Start a group chat",
-        );
-        await spotlight.dialog.locator("#mx_SpotlightDialog_button_startGroupChat").click();
-        await expect(page.getByRole("dialog")).toContainText("Direct Messages");
-    });
-
     test("should close spotlight after starting a DM", async ({ page, app, bot1 }) => {
         await startDM(app, page, bot1.credentials.displayName);
         await expect(page.locator(".mx_SpotlightDialog")).toHaveCount(0);
