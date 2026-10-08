@@ -1228,6 +1228,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 {discoverSpacesSection}
                 {publicRoomsSection}
                 {joinRoomSection}
+                {hiddenResultsSection}
             </>
         );
     } else {
