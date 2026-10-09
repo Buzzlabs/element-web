@@ -650,7 +650,7 @@ importers:
         specifier: ^1.0.3
         version: 1.0.3
       matrix-js-sdk:
-        specifier: github:matrix-org/matrix-js-sdk#develop
+        specifier: github:matrix-org/matrix-js-sdk#33e4db98814edb1e100ac8b9721cf84de998f429
         version: https://codeload.github.com/matrix-org/matrix-js-sdk/tar.gz/33e4db98814edb1e100ac8b9721cf84de998f429
       matrix-widget-api:
         specifier: ^1.17.0
@@ -10053,6 +10053,7 @@ packages:
 
   jsrsasign@11.1.3:
     resolution: {integrity: sha512-nPnK5D/4lv0Dwr7TlzrKtAd8JlLZwFTqTUUB3NQCbtdobcRcohGFxjbPySDVh74iWUudcCsapYT6OxoyhJLhhA==}
+    deprecated: This package is no longer maintained.
 
   jsx-ast-utils@3.3.5:
     resolution: {integrity: sha512-ZZow9HBI5O6EPgSJLUb8n2NKgmVWTwCvHGwFuJlMjvLFqlGG6pjirPhtdsseaLZjSibD8eegzmYpUZwoIlj2cQ==}
