@@ -65,7 +65,7 @@ describe("<RoomListView />", () => {
         expect(container).toMatchSnapshot();
     });
 
-        it("hides the create actions when the user cannot create rooms", () => {
+    it("hides the create actions when the user cannot create rooms", () => {
         renderWithMockContext(<EmptyWithoutCreatePermission />);
         expect(screen.queryByRole("button", { name: "Start chat" })).toBeNull();
         expect(screen.queryByRole("button", { name: "New room" })).toBeNull();

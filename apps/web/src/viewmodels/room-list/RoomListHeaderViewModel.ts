@@ -91,13 +91,7 @@ export class RoomListHeaderViewModel
     private async loadAdminStatus(): Promise<void> {
         this.isAdmin = await isGlobalAdmin();
 
-        this.snapshot.merge(
-            computeHeaderSpaceState(
-                this.props.spaceStore,
-                this.props.matrixClient,
-                this.isAdmin,
-            ),
-        );
+        this.snapshot.merge(computeHeaderSpaceState(this.props.spaceStore, this.props.matrixClient, this.isAdmin));
     }
 
     /**
@@ -153,7 +147,6 @@ export class RoomListHeaderViewModel
         createRoom(this.activeSpace);
         PosthogTrackers.trackInteraction("WebRoomListHeaderPlusMenuCreateRoomItem", e);
     };
-
 
     public createVideoRoom = async (): Promise<void> => {
         if (!(await isGlobalAdmin())) return;
@@ -238,7 +231,7 @@ export class RoomListHeaderViewModel
                 : Action.RoomListCollapseAllSections;
         defaultDispatcher.fire(action);
 
-         const kind = action === Action.RoomListExpandAllSections ? "Expand" : "Collapse";
+        const kind = action === Action.RoomListExpandAllSections ? "Expand" : "Collapse";
         PosthogTrackers.trackCollapseOrExpandSection(kind, "RoomListHeader");
     };
 
@@ -278,7 +271,7 @@ function getInitialSnapshot(spaceStore: SpaceStoreClass, matrixClient: MatrixCli
     return {
         activeSortOption,
         isMessagePreviewEnabled,
-        ...computeHeaderSpaceState(spaceStore, matrixClient,false),
+        ...computeHeaderSpaceState(spaceStore, matrixClient, false),
     };
 }
 
@@ -309,7 +302,7 @@ function getCanCreateVideoRoom(canCreateRoom: boolean): boolean {
 function computeHeaderSpaceState(
     spaceStore: SpaceStoreClass,
     matrixClient: MatrixClient,
-    isAdmin: boolean
+    isAdmin: boolean,
 ): Omit<RoomListHeaderViewSnapshot, "activeSortOption" | "isMessagePreviewEnabled"> {
     const isSectionFeatureEnabled = SettingsStore.getValue("feature_room_list_sections");
 
@@ -320,7 +313,7 @@ function computeHeaderSpaceState(
     const canCreateVideoRoom = getCanCreateVideoRoom(canCreateRoom);
     // Room/space creation is restricted to global admins in this fork, not the native Matrix per-space permission —
     // so we gate the compose menu on isAdmin rather than canCreateRoom.
-    const displayComposeMenu = isAdmin; 
+    const displayComposeMenu = isAdmin;
     const displaySpaceMenu = Boolean(activeSpace);
     const canInviteInSpace = Boolean(
         activeSpace?.getJoinRule() === JoinRule.Public || activeSpace?.canInvite(matrixClient.getSafeUserId()),
