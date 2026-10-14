@@ -39,7 +39,7 @@ export const RoomListEmptyStateView: React.FC<RoomListEmptyStateViewProps> = ({ 
                 description={
                     snapshot.canCreateRoom
                         ? _t("room_list|empty|no_chats_description")
-                        : _t("room_list|empty|no_chats_description_no_room_rights")
+                        : _t("room_list|empty|no_chats_description_joined_rooms")
                 }
             >
                 {snapshot.canCreateRoom && (

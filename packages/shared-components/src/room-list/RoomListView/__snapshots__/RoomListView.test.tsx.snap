@@ -3392,7 +3392,7 @@ exports[`<RoomListView /> > renders EmptyWithoutCreatePermission story 1`] = `
           <span
             class="RoomListEmptyStateView-module_description"
           >
-            Explore public rooms to find one to join
+            Rooms you join will show up here
           </span>
         </div>
       </div>
