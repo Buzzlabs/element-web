@@ -159,10 +159,10 @@ export default class Login {
         //         address: username,
         //     };
         // } else {
-        const   identifier = {
-                type: "m.id.user",
-                user: username,
-            };
+        const identifier = {
+            type: "m.id.user",
+            user: username,
+        };
         // }
 
         const loginParams = {

@@ -229,13 +229,8 @@ const toDiscoverRoomResult = (discoverRoom: DiscoverRoom): IDiscoverRoomResult =
     return {
         discoverRoom,
         section: isSpace ? Section.DiscoverSpaces : Section.PublicRoomsAndSpaces,
-        filter: isSpace
-            ? [Filter.PublicSpaces, Filter.PublicRooms]   
-            : [Filter.PublicRooms],
-        query: filterBoolean([
-            discoverRoom.room_id.toLowerCase(),
-            discoverRoom.name?.toLowerCase(),
-        ]),
+        filter: isSpace ? [Filter.PublicSpaces, Filter.PublicRooms] : [Filter.PublicRooms],
+        query: filterBoolean([discoverRoom.room_id.toLowerCase(), discoverRoom.name?.toLowerCase()]),
     };
 };
 
@@ -507,7 +502,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                     }
                 } else if (isMemberResult(entry)) {
                     if (!entry.alreadyFiltered && !entry.query?.some((q) => q.includes(lcQuery))) return; // bail, does not match query
-                } else if (isPublicRoomResult(entry)|| isDiscoverRoomResult(entry)) {
+                } else if (isPublicRoomResult(entry) || isDiscoverRoomResult(entry)) {
                     if (!entry.query?.some((q) => q.includes(lcQuery))) return; // bail, does not match query
                 } else {
                     if (!entry.name.toLowerCase().includes(lcQuery) && !entry.query?.some((q) => q.includes(lcQuery)))
@@ -666,7 +661,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
         if (!payingSpace) return;
         try {
             const spaceId = payingSpace.room_id;
-            const joinedRooms = await inviteSpace(spaceId);  // backend já colocou você nelas
+            const joinedRooms = await inviteSpace(spaceId); // backend já colocou você nelas
             setPayingSpace(null);
 
             const cli = MatrixClientPeg.safeGet();
@@ -686,7 +681,6 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
             setPayingSpace(null);
         }
     };
-
 
     let otherSearchesSection: JSX.Element | undefined;
     if (trimmedQuery || (filter !== Filter.PublicRooms && filter !== Filter.PublicSpaces)) {
@@ -711,7 +705,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                             {filterToLabel(Filter.PublicSpaces)}
                         </Option>
                     )}
-                   {filter !== Filter.PublicRooms && (
+                    {filter !== Filter.PublicRooms && (
                         <Option
                             id="mx_SpotlightDialog_button_explorePublicRooms"
                             onClick={() => setFilter(Filter.PublicRooms)}
@@ -769,9 +763,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                             const joinedRooms = await inviteSpace(spaceId);
                             const cli = MatrixClientPeg.safeGet();
                             await Promise.all(
-                                [spaceId, ...joinedRooms].map((roomId) =>
-                                    cli.joinRoom(roomId).catch(() => {}),
-                                ),
+                                [spaceId, ...joinedRooms].map((roomId) => cli.joinRoom(roomId).catch(() => {})),
                             );
                             viewRoom({ roomId: spaceId }, true, ev.type !== "click");
                         } catch {
@@ -796,32 +788,29 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                             }
                         >
                             <div className="mx_SpotlightDialog_result_multiline_text">
-                            <span className="mx_SpotlightDialog_result_multiline_name">{space.name}</span>
-                            <div className="mx_SpotlightDialog_result_details">
-                                {isPaid ? `R$ ${(space.price / 100).toFixed(2)}` : "Grátis"}
-                                {" · "}
-                                <AccessibleButton
-                                kind="link"
-                                onClick={(ev: ButtonEvent) => {
-                                    ev.stopPropagation();
-                                    openSpaceDetails(space);
-                                }}
-                                tabIndex={-1}
-                                style={{ color: "inherit", 
-                                fontWeight: "normal",textDecoration: "underline" }}
-                            >
-                                Ver salas
-                            </AccessibleButton>
+                                <span className="mx_SpotlightDialog_result_multiline_name">{space.name}</span>
+                                <div className="mx_SpotlightDialog_result_details">
+                                    {isPaid ? `R$ ${(space.price / 100).toFixed(2)}` : "Grátis"}
+                                    {" · "}
+                                    <AccessibleButton
+                                        kind="link"
+                                        onClick={(ev: ButtonEvent) => {
+                                            ev.stopPropagation();
+                                            openSpaceDetails(space);
+                                        }}
+                                        tabIndex={-1}
+                                        style={{ color: "inherit", fontWeight: "normal", textDecoration: "underline" }}
+                                    >
+                                        Ver salas
+                                    </AccessibleButton>
+                                </div>
                             </div>
-                        </div>
-
                         </Option>
                     );
                 }
                 const room = result.discoverRoom;
                 const isPaid = Number(room.price) > 0;
-                const buttonLabel = isPaid ? 
-                "Pagar" : "Entrar";
+                const buttonLabel = isPaid ? "Pagar" : "Entrar";
 
                 const onAction = (ev: ButtonEvent): void => {
                     ev.stopPropagation();
@@ -847,7 +836,11 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                         key={`${Section[result.section]}-${room.room_id}`}
                         onClick={onAction}
                         endAdornment={
-                            <AccessibleButton kind={isPaid ? "primary" : "primary_outline"} onClick={onAction} tabIndex={-1}>
+                            <AccessibleButton
+                                kind={isPaid ? "primary" : "primary_outline"}
+                                onClick={onAction}
+                                tabIndex={-1}
+                            >
                                 {buttonLabel}
                             </AccessibleButton>
                         }
@@ -1097,7 +1090,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 </div>
             );
         }
-         let discoverSpacesSection: JSX.Element | undefined;
+        let discoverSpacesSection: JSX.Element | undefined;
         if (filter === Filter.PublicSpaces || (filter === Filter.PublicRooms && showSpacesChip)) {
             let content: JSX.Element | JSX.Element[];
             if (discoverError) {
@@ -1115,16 +1108,14 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
             } else {
                 content = results[Section.DiscoverSpaces].slice(0, SECTION_LIMIT).map(resultMapper);
             }
- 
+
             discoverSpacesSection = (
                 <div
                     className="mx_SpotlightDialog_section mx_SpotlightDialog_results"
                     role="group"
                     aria-labelledby="mx_SpotlightDialog_section_discoverSpaces"
                 >
-                    <h4 id="mx_SpotlightDialog_section_discoverSpaces">
-                        {filterToLabel(Filter.PublicSpaces)}
-                    </h4>
+                    <h4 id="mx_SpotlightDialog_section_discoverSpaces">{filterToLabel(Filter.PublicSpaces)}</h4>
                     <div>{content}</div>
                 </div>
             );
@@ -1530,9 +1521,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                             >
                                 <strong>{r.name ?? r.roomId}</strong>
                                 {typeof r.numJoinedMembers === "number" && (
-                                    <span style={{ opacity: 0.7 }}>
-                                        {" "}· {r.numJoinedMembers} integrante(s)
-                                    </span>
+                                    <span style={{ opacity: 0.7 }}> · {r.numJoinedMembers} integrante(s)</span>
                                 )}
                             </li>
                         ))}
@@ -1666,7 +1655,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 aria-label={_t("spotlight_dialog|search_dialog")}
             >
                 <div className="mx_SpotlightDialog_searchBox mx_textinput">
-                                        {filter === Filter.PublicRooms && showSpacesChip && (
+                    {filter === Filter.PublicRooms && showSpacesChip && (
                         <div className="mx_SpotlightDialog_filter">
                             {filterToIcon(Filter.PublicSpaces)}
                             <span>{filterToLabel(Filter.PublicSpaces)}</span>
@@ -1715,7 +1704,9 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                         aria-label={_t("action|search")}
                         aria-describedby="mx_SpotlightDialog_keyboardPrompt"
                     />
-                    {(publicRoomsLoading || peopleLoading || profileLoading || discoverLoading) && <Spinner size={24} />}
+                    {(publicRoomsLoading || peopleLoading || profileLoading || discoverLoading) && (
+                        <Spinner size={24} />
+                    )}
                 </div>
 
                 <div

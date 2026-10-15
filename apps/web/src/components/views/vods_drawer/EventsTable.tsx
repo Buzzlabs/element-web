@@ -42,7 +42,9 @@ export function EventsTable({ roomId }: EventsTableProps): JSX.Element {
             .finally(() => {
                 if (!cancelled) setLoading(false);
             });
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [roomId]);
 
     if (loading) {

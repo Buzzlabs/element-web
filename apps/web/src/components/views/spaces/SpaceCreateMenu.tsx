@@ -56,17 +56,15 @@ export const createSpace = async (
     alias?: string,
     topic?: string,
     avatar?: string | File,
-    priceCents: number = 0, 
+    priceCents: number = 0,
     createOpts: Partial<ICreateRoomOpts> = {},
     otherOpts: Partial<Omit<ICreateOpts, "createOpts">> = {},
 ): Promise<string | null> => {
-        const derivedKeyword =
-        alias && alias.includes(":")
-            ? alias.substring(1, alias.indexOf(":"))
-            : nameToLocalpart(name);
+    const derivedKeyword =
+        alias && alias.includes(":") ? alias.substring(1, alias.indexOf(":")) : nameToLocalpart(name);
 
-    const isPaid = priceCents > 0;  
- 
+    const isPaid = priceCents > 0;
+
     return createRoom(client, {
         name,
         topic,
@@ -88,8 +86,8 @@ export const createSpace = async (
         roomType: RoomType.Space,
         useModuleCreation: true,
         visible: isPublic,
-        access_type: isPaid ? "private" : "public",  
-        price: priceCents,              
+        access_type: isPaid ? "private" : "public",
+        price: priceCents,
         keyword: derivedKeyword,
         historyVisibility: isPublic ? HistoryVisibility.WorldReadable : HistoryVisibility.Invited,
         spinner: false,
@@ -146,9 +144,9 @@ export const SpaceCreateForm: React.FC<ISpaceCreateFormProps> = ({
     showAliasField,
     topic,
     setTopic,
-    priceReais,       
-    setPriceReais, 
-    children,        
+    priceReais,
+    setPriceReais,
+    children,
 }) => {
     const cli = useContext(MatrixClientContext);
     const domain = cli.getDomain() ?? undefined;
@@ -281,19 +279,9 @@ const SpaceCreateMenu: React.FC<{
         try {
             setError(null);
             const parsedReais = Number(String(priceReais).replace(",", "."));
-            const priceCents = Number.isFinite(parsedReais) && parsedReais > 0
-                ? Math.round(parsedReais * 100)
-                : 0;
+            const priceCents = Number.isFinite(parsedReais) && parsedReais > 0 ? Math.round(parsedReais * 100) : 0;
 
-            await createSpace(
-                cli,
-                name,
-                visibility === Visibility.Public,
-                alias,
-                topic,
-                avatar,
-                priceCents,         
-            );
+            await createSpace(cli, name, visibility === Visibility.Public, alias, topic, avatar, priceCents);
             onFinished();
         } catch (e: any) {
             logger.error(e);
@@ -308,8 +296,7 @@ const SpaceCreateMenu: React.FC<{
             }
             setBusy(false); // destrava o botão — sem isso fica preso em "criando..."
         }
-        };
-    
+    };
 
     const onSearchClick = (): void => {
         defaultDispatcher.dispatch<OpenSpotlightPayload>({
@@ -344,7 +331,6 @@ const SpaceCreateMenu: React.FC<{
                     </AccessibleButton>
                 )}
             </React.Fragment>
-            
         );
     } else {
         body = (
