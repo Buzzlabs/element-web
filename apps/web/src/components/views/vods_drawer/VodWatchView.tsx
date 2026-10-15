@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, type JSX } from "react";
-import Hls from "hls.js"
+import Hls from "hls.js";
 
 import { fetchVods, type LiveShow } from "../../../vods/vodsData";
 
@@ -22,7 +22,6 @@ export function VodWatchView({ roomId, live, onClose, onSelectVod }: VodWatchVie
     const videoRef = useRef<HTMLVideoElement>(null);
 
     const hlsRef = useRef<Hls | null>(null);
-    
 
     useEffect(() => {
         const video = videoRef.current;
