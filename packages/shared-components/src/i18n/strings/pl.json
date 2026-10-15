@@ -119,7 +119,6 @@
         "empty": {
             "no_chats": "Nie ma jeszcze żadnych czatów",
             "no_chats_description": "Zacznij od wysłania wiadomości lub utworzenia pokoju",
-            "no_chats_description_no_room_rights": "Zacznij od wysłania komuś wiadomości",
             "no_favourites": "Nie masz jeszcze żadnych ulubionych czatów",
             "no_favourites_description": "Możesz dodać czat do ulubionych w ustawieniach czatu",
             "no_invites": "Nie masz żadnych nieprzeczytanych zaproszeń",

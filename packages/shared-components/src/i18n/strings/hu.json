@@ -117,7 +117,6 @@
         "empty": {
             "no_chats": "Még nincsenek csevegések",
             "no_chats_description": "Kezdje azzal, hogy üzenetet küld valakinek, vagy létrehoz egy szobát",
-            "no_chats_description_no_room_rights": "Kezdje azzal, hogy üzenetet küld valakinek",
             "no_favourites": "Még nincs kedvenc csevegése",
             "no_favourites_description": "A csevegési beállításokban adhat hozzá csevegést a kedvencekhez",
             "no_invites": "Nincs olvasatlan meghívója",

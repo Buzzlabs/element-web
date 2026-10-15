@@ -119,7 +119,6 @@
         "empty": {
             "no_chats": "Zatím žádné chaty",
             "no_chats_description": "Začněte tím, že někomu pošlete zprávu nebo vytvoříte místnost",
-            "no_chats_description_no_room_rights": "Začněte tím, že někomu napíšete zprávu",
             "no_favourites": "Zatím nemáte žádné oblíbené chaty",
             "no_favourites_description": "Chat si můžete přidat do oblíbených v nastavení chatu",
             "no_invites": "Nemáte žádné nepřečtené pozvánky",
