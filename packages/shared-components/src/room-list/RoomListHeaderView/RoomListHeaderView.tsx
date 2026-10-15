@@ -32,7 +32,7 @@ export interface RoomListHeaderViewSnapshot {
     title: string;
     /**
      * Whether to display the compose menu
-     * True if the user can create rooms
+     * True if the user may use the compose menu (global admins only in this fork)
      */
     displayComposeMenu: boolean;
     /**
@@ -141,7 +141,7 @@ interface RoomListHeaderViewProps {
 
 /**
  * The header view for the room list
- * The space name is displayed and a compose menu is shown if the user can create rooms
+ * The space name is displayed and a compose menu is shown if the user may use it (global admins only in this fork)
  *
  * @example
  * ```tsx
