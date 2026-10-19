@@ -88,7 +88,7 @@ export const createSpace = async (
         roomType: RoomType.Space,
         useModuleCreation: true,
         visible: isPublic,
-        access_type: isPaid ? "private" : "public",  
+        access_type: isPaid || !isPublic ? "private" : "public",  
         price: priceCents,              
         keyword: derivedKeyword,
         historyVisibility: isPublic ? HistoryVisibility.WorldReadable : HistoryVisibility.Invited,
