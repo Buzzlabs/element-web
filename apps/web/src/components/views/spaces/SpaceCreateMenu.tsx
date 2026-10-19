@@ -126,8 +126,8 @@ interface ISpaceCreateFormProps extends BProps {
     aliasFieldRef: RefObject<RoomAliasField | null>;
     showAliasField?: boolean;
     children?: ReactNode;
-    priceReais: string;
-    setPriceReais(this: void, value: string): void;
+    priceReais?: string;
+    setPriceReais?(this: void, value: string): void;
     onSubmit(this: void, e: SyntheticEvent): void;
     setAlias(this: void, alias: string): void;
 }
@@ -208,17 +208,19 @@ export const SpaceCreateForm: React.FC<ISpaceCreateFormProps> = ({
                 rows={3}
                 disabled={busy}
             />
-            <Field
-                name="spacePrice"
-                type="number"
-                label={"Preço (R$) — deixe 0 para grátis"}
-                value={priceReais}
-                min={0}
-                step={0.01}
-                onChange={(ev: ChangeEvent<HTMLInputElement>) => setPriceReais(ev.target.value)}
-                disabled={busy}
-                autoComplete="off"
-            />
+            {setPriceReais && (
+                <Field
+                    name="spacePrice"
+                    type="number"
+                    label={"Preço (R$) — deixe 0 para grátis"}
+                    value={priceReais ?? ""}
+                    min={0}
+                    step={0.01}
+                    onChange={(ev: ChangeEvent<HTMLInputElement>) => setPriceReais(ev.target.value)}
+                    disabled={busy}
+                    autoComplete="off"
+                />
+            )}
             {children}
         </form>
     );
