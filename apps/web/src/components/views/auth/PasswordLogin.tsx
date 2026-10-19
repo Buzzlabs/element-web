@@ -201,24 +201,6 @@ export default class PasswordLogin extends React.PureComponent<IProps, IState> {
         });
     }
 
-    private validateUsernameRules = withValidation({
-        rules: [
-            {
-                key: "required",
-                test({ value, allowEmpty }) {
-                    return allowEmpty || !!value;
-                },
-                invalid: () => _t("auth|username_field_required_invalid"),
-            },
-        ],
-    });
-
-    private onUsernameValidate = async (fieldState: IFieldState): Promise<IValidationResult> => {
-        const result = await this.validateUsernameRules(fieldState);
-        this.markFieldValid(LoginField.MatrixId, result.valid);
-        return result;
-    };
-
     private onEmailValidate = (result: IValidationResult): void => {
         this.markFieldValid(LoginField.Email, result.valid);
     };

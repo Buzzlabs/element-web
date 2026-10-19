@@ -101,8 +101,6 @@ export class RoomListViewModel
     private toastRef?: number;
 
     public constructor(props: RoomListViewModelProps) {
-        const activeSpace = SpaceStore.instance.activeSpaceRoom;
-
         // Get initial rooms
         const roomsResult = RoomListStoreV3.instance.getSortedRoomsInActiveSpace(undefined);
         // Starts hidden; only global admins should see "Nova sala", and that
