@@ -194,10 +194,10 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
 
     private loadStream = async (): Promise<void> => {
         try {
-            const { playback_url } = await getStream(this.props.room.roomId);
+            const { playback_url: playbackUrl } = await getStream(this.props.room.roomId);
             this.setState({
-                streamPlaybackUrl: playback_url ?? "",
-                streamInput: playback_url ?? "",
+                streamPlaybackUrl: playbackUrl ?? "",
+                streamInput: playbackUrl ?? "",
             });
         } catch (e) {
             logger.error("Falha ao carregar canal de transmissão:", e);
