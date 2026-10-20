@@ -8,6 +8,7 @@ import QuestionDialog from "../dialogs/QuestionDialog";
 import ErrorDialog from "../dialogs/ErrorDialog";
 import { getLiveWidget, stopLive } from "../../../utils/live/liveWidget";
 import { useMatrixClientContext } from "../../../contexts/MatrixClientContext";
+import UIStore from "../../../stores/UIStore";
 
 interface IProps {
     room: Room;
@@ -69,8 +70,8 @@ const LiveStreamWidget: React.FC<IProps> = ({ room, canManage }) => {
         const dx = e.clientX - dragState.current.startX;
         const dy = e.clientY - dragState.current.startY;
 
-        const maxX = window.innerWidth - width - MARGIN;
-        const maxY = window.innerHeight - height - MARGIN;
+        const maxX = UIStore.instance.windowWidth - width - MARGIN;
+        const maxY = UIStore.instance.windowHeight - height - MARGIN;
 
         setPosition({
             x: Math.min(Math.max(dragState.current.origX + dx, MARGIN), Math.max(maxX, MARGIN)),
@@ -94,7 +95,7 @@ const LiveStreamWidget: React.FC<IProps> = ({ room, canManage }) => {
     const onResizeMove = (e: React.PointerEvent): void => {
         if (!resizeState.current) return;
         const dx = e.clientX - resizeState.current.startX;
-        const maxWidth = window.innerWidth * MAX_WIDTH_RATIO;
+        const maxWidth = UIStore.instance.windowWidth * MAX_WIDTH_RATIO;
         setWidth(Math.min(Math.max(resizeState.current.origWidth + dx, MIN_WIDTH), maxWidth));
     };
 

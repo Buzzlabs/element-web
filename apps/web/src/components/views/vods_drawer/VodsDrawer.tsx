@@ -4,6 +4,7 @@ import { VodsGrid } from "./VodsGrid";
 import { EventsTable } from "./EventsTable";
 import { VodWatchView } from "./VodWatchView";
 import { type LiveShow } from "../../../vods/vodsData";
+import UIStore from "../../../stores/UIStore";
 
 /**
  * Height of the closed drawer "peek" strip. Exported so RoomView can add a
@@ -29,8 +30,8 @@ interface VodsDrawerProps {
 export function VodsDrawer({ roomId, showVods, showEvents, open, onOpenChange }: VodsDrawerProps): JSX.Element {
     const rootRef = useRef<HTMLDivElement>(null);
     const [containerSize, setContainerSize] = useState({
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: UIStore.instance.windowWidth,
+        height: UIStore.instance.windowHeight,
     });
     const [selectedTab, setSelectedTab] = useState<"rolou" | "eventos">("rolou");
     const [watchingVod, setWatchingVod] = useState<LiveShow | null>(null);
