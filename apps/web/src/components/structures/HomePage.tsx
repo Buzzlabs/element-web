@@ -10,6 +10,7 @@ import React, { type JSX } from "react";
 import { useContext, useState } from "react";
 import { ChatSolidIcon, ExploreIcon, GroupIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
 import { AutoHideScrollbar } from "@element-hq/web-shared-components";
+import classNames from "classnames";
 
 import { getHomePageUrl } from "../../utils/pages";
 import { _t, _tDom } from "../../languageHandler";
@@ -26,7 +27,6 @@ import MiniAvatarUploader, { AVATAR_SIZE } from "../views/elements/MiniAvatarUpl
 import PosthogTrackers from "../../PosthogTrackers";
 import EmbeddedPage from "./EmbeddedPage";
 import { useIsAdmin } from "../../hooks/useIsAdmin";
-import classNames from "classnames";
 
 const onClickSendDm = (ev: ButtonEvent): void => {
     PosthogTrackers.trackInteraction("WebHomeCreateChatButton", ev);

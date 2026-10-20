@@ -266,7 +266,7 @@ export function VodsDrawer({ roomId, showVods, showEvents, open, onOpenChange }:
                         />
                     </>
                 )}
-                {showEvents && effectiveTab === "eventos" && <EventsTable roomId={roomId}/>}
+                {showEvents && effectiveTab === "eventos" && <EventsTable roomId={roomId} />}
             </div>
         </div>
     );
