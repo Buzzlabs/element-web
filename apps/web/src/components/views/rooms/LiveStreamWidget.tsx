@@ -104,24 +104,25 @@ const LiveStreamWidget: React.FC<IProps> = ({ room, canManage }) => {
     };
 
     // --------- player HLS ---------
+    const liveUrl = live?.url;
     useEffect(() => {
-        if (!live || !videoRef.current) return;
+        if (!liveUrl || !videoRef.current) return;
         const video = videoRef.current;
 
         if (Hls.isSupported()) {
             const hls = new Hls();
-            hls.loadSource(live.url);
+            hls.loadSource(liveUrl);
             hls.attachMedia(video);
             hlsRef.current = hls;
         } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-            video.src = live.url;
+            video.src = liveUrl;
         }
 
         return () => {
             hlsRef.current?.destroy();
             hlsRef.current = null;
         };
-    }, [live?.url]);
+    }, [liveUrl]);
 
     const onStop = useCallback((): void => {
         Modal.createDialog(QuestionDialog, {
