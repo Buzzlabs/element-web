@@ -90,7 +90,6 @@ class RoomTile extends React.PureComponent<Props, State> {
         this.forceUpdate();
     };
 
-
     public constructor(props: Props) {
         super(props);
 

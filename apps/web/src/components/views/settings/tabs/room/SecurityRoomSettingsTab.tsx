@@ -45,11 +45,15 @@ import { Caption } from "../../../typography/Caption";
 import { MEGOLM_ENCRYPTION_ALGORITHM } from "../../../../../utils/crypto";
 import { BusinessVisibilitySection } from "./BusinessVisibilitySection";
 import {
-    getRoomFeatures, setRoomFeature, ROOM_FEATURES,
-    getRoomCalendar, setRoomCalendar,
-    getStream, setStream,
+    getRoomFeatures,
+    setRoomFeature,
+    ROOM_FEATURES,
+    getRoomCalendar,
+    setRoomCalendar,
+    getStream,
+    setStream,
 } from "../../../../../utils/admin/roomFeatures";
-import { getLiveWidget, startLive, stopLive } from "../../../../../utils/live/liveWidget"
+import { getLiveWidget, startLive, stopLive } from "../../../../../utils/live/liveWidget";
 import ToggleSwitch from "../../../elements/ToggleSwitch";
 import defaultDispatcher from "../../../../../dispatcher/dispatcher";
 import TextInputDialog from "../../../dialogs/TextInputDialog";
@@ -121,8 +125,6 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
         this.refreshLiveState();
         this.props.room.client.on(RoomStateEvent.Events, this.onRoomState);
 
-
-
         this.setState({
             hasAliases: await this.hasAliases(),
             encrypted: Boolean(await this.context.getCrypto()?.isEncryptionEnabledInRoom(this.props.room.roomId)),
@@ -166,7 +168,7 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
             title: "Iniciar transmissão",
             description: "Qual o título desta transmissão?",
             placeholder: "Ex: Live de hoje — entrevista especial",
-            value: this.props.room.name || "Live",   // <-- era defaultValue, agora é value
+            value: this.props.room.name || "Live", // <-- era defaultValue, agora é value
             button: "Iniciar",
         });
 
@@ -177,12 +179,7 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
 
         this.setState({ streamBusy: true });
         try {
-            await startLive(
-                this.props.room.client,
-                this.props.room.roomId,
-                title,
-                this.state.streamPlaybackUrl,
-            );
+            await startLive(this.props.room.client, this.props.room.roomId, title, this.state.streamPlaybackUrl);
             this.refreshLiveState();
         } catch (e) {
             logger.error("Falha ao iniciar transmissão:", e);
@@ -190,7 +187,6 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
             this.setState({ streamBusy: false });
         }
     };
-
 
     private loadStream = async (): Promise<void> => {
         try {
@@ -683,7 +679,7 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
         const hasEncryptionPermission = room.currentState.mayClientSendStateEvent(EventType.RoomEncryption, client);
         const isEncryptionForceDisabled = shouldForceDisableEncryption(client);
         const canEnableEncryption = !isEncrypted && !isEncryptionForceDisabled && hasEncryptionPermission;
-            const calendarSection = this.state.roomFeatures["events"] && (
+        const calendarSection = this.state.roomFeatures["events"] && (
             <SettingsFieldset
                 legend={"Calendário de eventos"}
                 description={"ID do Google Calendar que fornece os eventos desta sala."}
@@ -746,27 +742,32 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
             </SettingsFieldset>
         );
         const featuresSection = (
-        <SettingsFieldset
-            legend={"Funcionalidades da sala"}
-            description={"Ative ou desative abas opcionais para esta sala."}
-        >
-            {ROOM_FEATURES.map(({ key, label }) => (
-                <div
-                    key={key}
-                    className="mx_SettingsFlag"
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}
-                >
-                    <span>{label}</span>
-                    <ToggleSwitch
-                        checked={!!this.state.roomFeatures[key]}
-                        disabled={this.state.featuresBusy}
-                        onChange={(checked) => this.onFeatureToggle(key, checked)}
-                        aria-label={label}
-                    />
-                </div>
-            ))}
-        </SettingsFieldset>
-    );
+            <SettingsFieldset
+                legend={"Funcionalidades da sala"}
+                description={"Ative ou desative abas opcionais para esta sala."}
+            >
+                {ROOM_FEATURES.map(({ key, label }) => (
+                    <div
+                        key={key}
+                        className="mx_SettingsFlag"
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginBottom: "8px",
+                        }}
+                    >
+                        <span>{label}</span>
+                        <ToggleSwitch
+                            checked={!!this.state.roomFeatures[key]}
+                            disabled={this.state.featuresBusy}
+                            onChange={(checked) => this.onFeatureToggle(key, checked)}
+                            aria-label={label}
+                        />
+                    </div>
+                ))}
+            </SettingsFieldset>
+        );
 
         let encryptionSettings: JSX.Element | undefined;
         if (

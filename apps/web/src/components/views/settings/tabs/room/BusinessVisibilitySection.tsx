@@ -8,7 +8,12 @@ import Field from "../../../elements/Field";
 import AccessibleButton from "../../../elements/AccessibleButton";
 import Spinner from "../../../elements/Spinner";
 import SettingsFieldset from "../../SettingsFieldset";
-import { changeAccessType, changePrice, changeVisibility, getRoomVisibility } from "../../../../../utils/admin/roomBusiness";
+import {
+    changeAccessType,
+    changePrice,
+    changeVisibility,
+    getRoomVisibility,
+} from "../../../../../utils/admin/roomBusiness";
 import { useIsAdmin } from "../../../../../hooks/useIsAdmin";
 
 interface IProps {
@@ -61,8 +66,7 @@ export const BusinessVisibilitySection: React.FC<IProps> = ({ room }) => {
         const onState = async (e: MatrixEvent): Promise<void> => {
             if (e.getRoomId() !== room.roomId || e.getType() !== EventType.RoomJoinRules) return;
 
-            const accessType: "public" | "private" =
-                room.getJoinRule() === JoinRule.Public ? "public" : "private";
+            const accessType: "public" | "private" = room.getJoinRule() === JoinRule.Public ? "public" : "private";
             if (last === accessType) return;
             last = accessType;
 
@@ -165,7 +169,7 @@ export const BusinessVisibilitySection: React.FC<IProps> = ({ room }) => {
                 label="Preço do chat (R$)"
                 value={priceReais}
                 disabled={!priceEditable || saving}
-                onChange={(e: { target: { value: React.SetStateAction<string>; }; }) => setPriceReais(e.target.value)}
+                onChange={(e: { target: { value: React.SetStateAction<string> } }) => setPriceReais(e.target.value)}
                 min={0}
             />
             <div className="mx_SettingsTab_subsectionText">{helperText}</div>

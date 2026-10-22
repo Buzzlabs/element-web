@@ -121,10 +121,7 @@ function toLiveShow(item: VodServiceItem): LiveShow {
 /**
  * VOD list for a room, paginated, from the `vod_service` Synapse module.
  */
-export async function fetchVods(
-    roomId: string,
-    page = 1,
-): Promise<{ lives: LiveShow[]; lastPage: number }> {
+export async function fetchVods(roomId: string, page = 1): Promise<{ lives: LiveShow[]; lastPage: number }> {
     if (!roomId) {
         throw new Error("fetchVods: roomId é obrigatório");
     }

@@ -8,7 +8,6 @@ export const ROOM_FEATURES: ReadonlyArray<{ key: string; label: string }> = [
 
 export type RoomFeaturesMap = Record<string, boolean>;
 
-
 export interface StreamInfo {
     room_id: string;
     playback_url: string | null;
@@ -22,7 +21,7 @@ function authHeaders(): Record<string, string> {
     const accessToken = MatrixClientPeg.safeGet().getAccessToken();
     return {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        "Authorization": `Bearer ${accessToken}`,
     };
 }
 
@@ -73,7 +72,6 @@ export async function getRoomCalendar(roomId: string): Promise<{ calendarId: str
     return { calendarId: body?.calendarId ?? null };
 }
 
-
 export async function setRoomCalendar(roomId: string, calendarId: string): Promise<void> {
     const res = await fetch(`${baseUrl()}/_synapse/schedule_service/set_calendar`, {
         method: "POST",
@@ -84,7 +82,6 @@ export async function setRoomCalendar(roomId: string, calendarId: string): Promi
         throw new Error((await readError(res)) ?? `schedule_service/set_calendar failed with status ${res.status}`);
     }
 }
-
 
 export async function getStream(roomId: string): Promise<StreamInfo> {
     const res = await fetch(`${baseUrl()}/_synapse/room_streams_service/get_stream`, {
