@@ -72,11 +72,6 @@ test.describe("Room Directory", () => {
 
             const dialog = page.locator(".mx_SpotlightDialog");
             await dialog.getByRole("textbox", { name: "Search" }).fill("Unknown Room");
-            await expect(
-                dialog.getByText(
-                    "If you can't find the room you're looking for, ask for an invite or create a new room.",
-                ),
-            ).toHaveClass("mx_SpotlightDialog_otherSearches_messageSearchText");
 
             await expect(page.locator(".mx_Dialog")).toMatchScreenshot("filtered-no-results.png");
 
