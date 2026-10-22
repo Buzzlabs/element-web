@@ -102,7 +102,6 @@
         "empty": {
             "no_chats": "暂无聊天",
             "no_chats_description": "首先向人们发送消息或创建房间。",
-            "no_chats_description_no_room_rights": "开始向某人发送消息",
             "no_favourites": "你还没有收藏聊天",
             "no_favourites_description": "你可以在聊天设置中将聊天添加到收藏夹",
             "no_invites": "你没有任何未读邀请",

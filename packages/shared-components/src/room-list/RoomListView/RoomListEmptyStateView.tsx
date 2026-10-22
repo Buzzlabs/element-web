@@ -31,35 +31,31 @@ export interface RoomListEmptyStateViewProps {
 export const RoomListEmptyStateView: React.FC<RoomListEmptyStateViewProps> = ({ vm }): JSX.Element => {
     const snapshot = useViewModel(vm);
 
+    // Don't invite users to create a room when they can't: the create actions are hidden for them.
+    const noChatsDescription = snapshot.canCreateRoom
+        ? _t("room_list|empty|no_chats_description")
+        : _t("room_list|empty|no_chats_description_joined_rooms");
+
     // If there is no active filter, show the default empty state
     if (!snapshot.activeFilterId) {
         return (
-            <GenericPlaceholder
-                title={_t("room_list|empty|no_chats")}
-                description={
-                    snapshot.canCreateRoom
-                        ? _t("room_list|empty|no_chats_description")
-                        : _t("room_list|empty|no_chats_description_no_room_rights")
-                }
-            >
-                <Flex
-                    className={styles.defaultPlaceholder}
-                    align="center"
-                    justify="center"
-                    direction="column"
-                    gap="var(--cpd-space-4x)"
-                >
-                    {snapshot.canCreateRoom && (
+            <GenericPlaceholder title={_t("room_list|empty|no_chats")} description={noChatsDescription}>
+                {snapshot.canCreateRoom && (
+                    <Flex
+                        className={styles.defaultPlaceholder}
+                        align="center"
+                        justify="center"
+                        direction="column"
+                        gap="var(--cpd-space-4x)"
+                    >
                         <Button size="md" kind="secondary" Icon={ChatIcon} onClick={vm.createChatRoom}>
                             {_t("action|start_chat")}
                         </Button>
-                    )}
-                    {snapshot.canCreateRoom && (
                         <Button size="md" kind="secondary" Icon={RoomIcon} onClick={vm.createRoom}>
                             {_t("action|new_room")}
                         </Button>
-                    )}
-                </Flex>
+                    </Flex>
+                )}
             </GenericPlaceholder>
         );
     }
@@ -120,12 +116,7 @@ export const RoomListEmptyStateView: React.FC<RoomListEmptyStateViewProps> = ({ 
                 />
             );
         default:
-            return (
-                <GenericPlaceholder
-                    title={_t("room_list|empty|no_chats")}
-                    description={_t("room_list|empty|no_chats_description")}
-                />
-            );
+            return <GenericPlaceholder title={_t("room_list|empty|no_chats")} description={noChatsDescription} />;
     }
 };
 

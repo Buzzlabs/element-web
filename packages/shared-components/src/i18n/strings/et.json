@@ -117,7 +117,6 @@
         "empty": {
             "no_chats": "Vestlusi veel ei leidu",
             "no_chats_description": "Alusta sellest, et leia mõni vestluspartner või loo oma jututuba",
-            "no_chats_description_no_room_rights": "Alusta sellest, et leia mõni vestluspartner",
             "no_favourites": "Sa pole veel ühtegi vestlust märkinud lemmikuks",
             "no_favourites_description": "Vestluse saad märkida lemmikuks tema seadistustest",
             "no_invites": "Sul pole lugemata kutseid",

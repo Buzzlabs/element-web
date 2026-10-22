@@ -117,7 +117,6 @@
         "empty": {
             "no_chats": "Pas encore de discussions",
             "no_chats_description": "Commencez par envoyer un message à quelqu'un ou en créant un salon",
-            "no_chats_description_no_room_rights": "Commencez par envoyer un message à quelqu'un",
             "no_favourites": "Vous n'avez pas encore de discussion favorite",
             "no_favourites_description": "Vous pouvez ajouter une conversation à vos favoris dans les paramètres de discussion",
             "no_invites": "Vous n'avez aucune invitation non lue",
