@@ -548,10 +548,12 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
                         <Field
                             label="Keyword"
                             value={this.state.keyword}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => this.setState({
-                                keyword: e.target.value,
-                                keywordAlreadyExists: false,
-                            })}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                this.setState({
+                                    keyword: e.target.value,
+                                    keywordAlreadyExists: false,
+                                })
+                            }
                         />
 
                         <SettingsToggleInput
