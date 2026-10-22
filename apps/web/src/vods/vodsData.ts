@@ -35,6 +35,12 @@ export interface EventItem {
     start: Date;
 }
 
+/** One entry of the `schedule_service` list_events response (Google Calendar style). */
+interface ScheduleServiceEvent {
+    summary?: string;
+    start: { dateTime?: string; date: string };
+}
+
 /** Shape returned by the `vod_service` Synapse module. */
 interface VodServiceItem {
     id: number;
@@ -63,14 +69,8 @@ interface VodServiceResponse {
     };
 }
 
-const MOCK_DELAY_MS = 300;
-
 /** How many VODs each page request asks for. */
 const PAGE_SIZE = 10;
-
-function delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 /** Formats "Main Channel" titles into "Live dd/mm/yy", same rule as the Flutter code. */
 function normalizeTitle(title: string, startedAtRaw: string | undefined): string {
@@ -150,7 +150,7 @@ export async function fetchEvents(roomId: string): Promise<EventItem[]> {
         body: JSON.stringify({ room_id: roomId, limit: 6 }),
     });
     if (!res.ok) throw new Error(`schedule_service respondeu ${res.status}`);
-    const json = await res.json();
+    const json = (await res.json()) as { items: ScheduleServiceEvent[] };
     return json.items.map((e) => ({
         summary: e.summary ?? "Evento",
         start: new Date(e.start.dateTime ?? e.start.date),

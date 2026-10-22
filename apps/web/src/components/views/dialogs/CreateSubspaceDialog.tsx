@@ -77,6 +77,7 @@ const CreateSubspaceDialog: React.FC<IProps> = ({ space, onAddExistingSpaceClick
                 alias,
                 topic,
                 avatar,
+                0, // priceCents: subspaces are created free
                 {},
                 { parentSpace, joinRule },
             );

@@ -88,6 +88,10 @@ export function getRoomContext(room: Room, override: Partial<RoomContextType>): 
         promptAskToJoin: false,
         viewRoomOpts: { buttons: [] },
         isRoomEncrypted: false,
+        vodsDrawerOpen: false,
+        vodsEnabled: false,
+        eventsEnabled: false,
+        liveEnabled: false,
         ...override,
     };
 }

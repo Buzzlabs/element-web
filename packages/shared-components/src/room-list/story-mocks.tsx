@@ -107,6 +107,7 @@ export const createMockRoomSnapshot = (id: string, name: string, index: number):
     roomNotifState: RoomNotifState.AllMessages,
     canMoveToSection: true,
     sections: [],
+    isLive: false,
 });
 
 export function createMockRoomItemViewModel(roomId: string, name: string, index: number): RoomListItemViewModel {

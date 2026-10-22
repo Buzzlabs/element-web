@@ -86,8 +86,8 @@ export const createSpace = async (
         roomType: RoomType.Space,
         useModuleCreation: true,
         visible: isPublic,
-        access_type: isPaid ? "private" : "public",
-        price: priceCents,
+        access_type: isPaid || !isPublic ? "private" : "public",  
+        price: priceCents,              
         keyword: derivedKeyword,
         historyVisibility: isPublic ? HistoryVisibility.WorldReadable : HistoryVisibility.Invited,
         spinner: false,
@@ -124,8 +124,8 @@ interface ISpaceCreateFormProps extends BProps {
     aliasFieldRef: RefObject<RoomAliasField | null>;
     showAliasField?: boolean;
     children?: ReactNode;
-    priceReais: string;
-    setPriceReais(this: void, value: string): void;
+    priceReais?: string;
+    setPriceReais?(this: void, value: string): void;
     onSubmit(this: void, e: SyntheticEvent): void;
     setAlias(this: void, alias: string): void;
 }
@@ -206,17 +206,19 @@ export const SpaceCreateForm: React.FC<ISpaceCreateFormProps> = ({
                 rows={3}
                 disabled={busy}
             />
-            <Field
-                name="spacePrice"
-                type="number"
-                label={"Preço (R$) — deixe 0 para grátis"}
-                value={priceReais}
-                min={0}
-                step={0.01}
-                onChange={(ev: ChangeEvent<HTMLInputElement>) => setPriceReais(ev.target.value)}
-                disabled={busy}
-                autoComplete="off"
-            />
+            {setPriceReais && (
+                <Field
+                    name="spacePrice"
+                    type="number"
+                    label={"Preço (R$) — deixe 0 para grátis"}
+                    value={priceReais ?? ""}
+                    min={0}
+                    step={0.01}
+                    onChange={(ev: ChangeEvent<HTMLInputElement>) => setPriceReais(ev.target.value)}
+                    disabled={busy}
+                    autoComplete="off"
+                />
+            )}
             {children}
         </form>
     );
@@ -315,13 +317,13 @@ const SpaceCreateMenu: React.FC<{
                 <SpacePillButton
                     icon={<PublicIcon />}
                     title={_t("common|public")}
-                    description="Aparece no Explorar — qualquer pessoa pode encontrar e entrar."
+                    description={_t("create_space|public_description")}
                     onClick={() => setVisibility(Visibility.Public)}
                 />
                 <SpacePillButton
                     icon={<LockSolidIcon />}
                     title={_t("common|private")}
-                    description="Não aparece no Explorar — só com link ou convite."
+                    description={_t("create_space|private_description")}
                     onClick={() => setVisibility(Visibility.Private)}
                 />
 
