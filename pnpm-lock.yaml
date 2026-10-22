@@ -650,7 +650,7 @@ importers:
         specifier: ^1.0.3
         version: 1.0.3
       matrix-js-sdk:
-        specifier: github:matrix-org/matrix-js-sdk#develop
+        specifier: github:matrix-org/matrix-js-sdk#33e4db98814edb1e100ac8b9721cf84de998f429
         version: https://codeload.github.com/matrix-org/matrix-js-sdk/tar.gz/33e4db98814edb1e100ac8b9721cf84de998f429
       matrix-widget-api:
         specifier: ^1.17.0
