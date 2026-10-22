@@ -194,10 +194,10 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
 
     private loadStream = async (): Promise<void> => {
         try {
-            const { playback_url } = await getStream(this.props.room.roomId);
+            const { playback_url: playbackUrl } = await getStream(this.props.room.roomId);
             this.setState({
-                streamPlaybackUrl: playback_url ?? "",
-                streamInput: playback_url ?? "",
+                streamPlaybackUrl: playbackUrl ?? "",
+                streamInput: playbackUrl ?? "",
             });
         } catch (e) {
             logger.error("Falha ao carregar canal de transmissão:", e);
@@ -685,8 +685,8 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
         const canEnableEncryption = !isEncrypted && !isEncryptionForceDisabled && hasEncryptionPermission;
             const calendarSection = this.state.roomFeatures["events"] && (
             <SettingsFieldset
-                legend={"Calendário de eventos"}
-                description={"ID do Google Calendar que fornece os eventos desta sala."}
+                legend="Calendário de eventos"
+                description="ID do Google Calendar que fornece os eventos desta sala."
             >
                 <input
                     className="mx_LiveStreamInput"
@@ -702,14 +702,14 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
                     onClick={this.onSaveCalendar}
                     disabled={this.state.calendarBusy || this.state.calendarInput.trim() === this.state.roomCalendarId}
                 >
-                    {"Salvar"}
+                    Salvar
                 </AccessibleButton>
             </SettingsFieldset>
         );
         const streamSection = this.state.roomFeatures["live"] && (
             <SettingsFieldset
-                legend={"Canal de transmissão (Live)"}
-                description={"URL de reprodução (HLS) do canal usado para transmitir ao vivo nesta sala."}
+                legend="Canal de transmissão (Live)"
+                description="URL de reprodução (HLS) do canal usado para transmitir ao vivo nesta sala."
             >
                 <input
                     type="text"
@@ -724,7 +724,7 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
                     onClick={this.onSaveStream}
                     disabled={this.state.streamBusy || this.state.streamInput.trim() === this.state.streamPlaybackUrl}
                 >
-                    {"Salvar"}
+                    Salvar
                 </AccessibleButton>
 
                 {/* controle de iniciar/encerrar — só faz sentido se já tem URL salva */}
@@ -747,8 +747,8 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
         );
         const featuresSection = (
         <SettingsFieldset
-            legend={"Funcionalidades da sala"}
-            description={"Ative ou desative abas opcionais para esta sala."}
+            legend="Funcionalidades da sala"
+            description="Ative ou desative abas opcionais para esta sala."
         >
             {ROOM_FEATURES.map(({ key, label }) => (
                 <div

@@ -1,5 +1,6 @@
-import { MatrixClientPeg } from "../../MatrixClientPeg";
 import { type MatrixClient } from "matrix-js-sdk/src/matrix";
+
+import { MatrixClientPeg } from "../../MatrixClientPeg";
 
 export interface SpaceChildRoom {
     roomId: string;

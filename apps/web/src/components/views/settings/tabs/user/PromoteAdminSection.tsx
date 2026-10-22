@@ -69,7 +69,8 @@ export const PromoteAdminSection: React.FC = () => {
                 />
 
                 {feedback && (
-                    <div role="alert" style={{ marginTop: "8px", fontSize: "14px",
+                    <div role="alert"
+                        style={{ marginTop: "8px", fontSize: "14px",
                         color: feedback.ok
                             ? "var(--cpd-color-text-success-primary, #0a0)"
                             : "var(--cpd-color-text-critical-primary, #d00)" }}>

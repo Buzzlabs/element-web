@@ -8,7 +8,7 @@ Please see LICENSE files in the repository root for full details.
 */
 
 import React, { createRef } from "react";
-import { type Room, RoomEvent } from "matrix-js-sdk/src/matrix";
+import { type Room, RoomEvent, RoomStateEvent, type MatrixEvent } from "matrix-js-sdk/src/matrix";
 import { KnownMembership } from "matrix-js-sdk/src/types";
 import classNames from "classnames";
 import { OverflowHorizontalIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
@@ -47,7 +47,6 @@ import { isKnockDenied } from "../../../utils/membership";
 import SettingsStore from "../../../settings/SettingsStore";
 import { getNotificationIcon } from "../dialogs/spotlight/RoomResultContextMenus.tsx";
 import { getLiveWidget } from "../../../utils/live/liveWidget";
-import { RoomStateEvent, type MatrixEvent } from "matrix-js-sdk/src/matrix";
 
 interface Props {
     room: Room;
