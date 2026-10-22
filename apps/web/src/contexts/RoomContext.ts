@@ -77,6 +77,10 @@ const RoomContext = createContext<RoomContextType>({
     promptAskToJoin: false,
     viewRoomOpts: { buttons: [] },
     isRoomEncrypted: null,
+    vodsDrawerOpen: false,
+    vodsEnabled: false,
+    eventsEnabled: false,
+    liveEnabled: false,
     // roomViewStore should always be present as it is passed to RoomView constructor.
     // In time when we migrate the RoomView to MVVM it will cease to exist(become a ViewModel).
     roomViewStore: undefined!,

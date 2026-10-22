@@ -81,6 +81,10 @@ describe("<SendMessageComposer/>", () => {
         promptAskToJoin: false,
         viewRoomOpts: { buttons: [] },
         isRoomEncrypted: false,
+        vodsDrawerOpen: false,
+        vodsEnabled: false,
+        eventsEnabled: false,
+        liveEnabled: false,
     };
     describe("createMessageContent", () => {
         it("sends plaintext messages correctly", () => {

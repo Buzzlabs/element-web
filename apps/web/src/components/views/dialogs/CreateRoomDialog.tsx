@@ -556,7 +556,7 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
                          <Field
                             label="Keyword"
                             value={this.state.keyword}
-                            onChange={(e) => this.setState({
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => this.setState({
                                 keyword: e.target.value,
                                 keywordAlreadyExists: false,
                             })}
@@ -578,7 +578,7 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
                                 <Field
                                     label="Preço"
                                     value={this.state.price}
-                                    onChange={(e) =>
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                         this.setState({
                                             price: e.target.value,
                                             invalidPrice: false,
