@@ -11,7 +11,7 @@ export default {
         return [
             {
                 params: { id: "automations" },
-                content: await genWorkflowMermaid([root, join(root, "node_modules", "matrix-js-sdk")]),
+                content: await genWorkflowMermaid([root]),
             },
         ];
     },
