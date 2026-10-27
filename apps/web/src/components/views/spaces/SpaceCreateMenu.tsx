@@ -335,13 +335,13 @@ const SpaceCreateMenu: React.FC<{
 
                 <SpacePillButton
                     icon={<PublicIcon />}
-                    title={_t("common|public")}
+                    title={_t("create_space|visible_title")}
                     description={_t("create_space|public_description")}
                     onClick={() => setVisibility(Visibility.Public)}
                 />
                 <SpacePillButton
                     icon={<LockSolidIcon />}
-                    title={_t("common|private")}
+                    title={_t("create_space|invisible_title")}
                     description={_t("create_space|private_description")}
                     onClick={() => setVisibility(Visibility.Private)}
                 />
