@@ -48,6 +48,7 @@ import { type OpenSpotlightPayload } from "../../../dispatcher/payloads/OpenSpot
 import { useSettingValue } from "../../../hooks/useSettings.ts";
 import { UIFeature } from "../../../settings/UIFeature.ts";
 import SpacePillButton from "../../structures/SpacePillButton.tsx";
+import { reaisToCents } from "../../../utils/admin/price.ts";
 
 export const createSpace = async (
     client: MatrixClient,
@@ -280,12 +281,16 @@ const SpaceCreateMenu: React.FC<{
             return;
         }
 
+        const priceText = String(priceReais).trim();
+        const priceCents = priceText === "" ? 0 : reaisToCents(priceText);
+        if (priceCents === null) {
+            setError("Preço inválido. Use um valor como 10,50.");
+            setBusy(false);
+            return;
+        }
+
         try {
             setError(null);
-            const parsedReais = Number(String(priceReais).replace(",", "."));
-            const priceCents = Number.isFinite(parsedReais) && parsedReais > 0
-                ? Math.round(parsedReais * 100)
-                : 0;
 
             await createSpace(
                 cli,
