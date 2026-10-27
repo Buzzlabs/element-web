@@ -48,6 +48,7 @@ import { type OpenSpotlightPayload } from "../../../dispatcher/payloads/OpenSpot
 import { useSettingValue } from "../../../hooks/useSettings.ts";
 import { UIFeature } from "../../../settings/UIFeature.ts";
 import SpacePillButton from "../../structures/SpacePillButton.tsx";
+import { reaisToCents } from "../../../utils/admin/price.ts";
 
 export const createSpace = async (
     client: MatrixClient,
@@ -280,12 +281,17 @@ const SpaceCreateMenu: React.FC<{
             return;
         }
 
+        const priceText = String(priceReais).trim();
+        // Only visible spaces can have a price; invisible ones are always free.
+        const priceCents = visibility !== Visibility.Public || priceText === "" ? 0 : reaisToCents(priceText);
+        if (priceCents === null) {
+            setError("Preço inválido. Use um valor como 10,50.");
+            setBusy(false);
+            return;
+        }
+
         try {
             setError(null);
-            const parsedReais = Number(String(priceReais).replace(",", "."));
-            const priceCents = Number.isFinite(parsedReais) && parsedReais > 0
-                ? Math.round(parsedReais * 100)
-                : 0;
 
             await createSpace(
                 cli,
@@ -329,13 +335,13 @@ const SpaceCreateMenu: React.FC<{
 
                 <SpacePillButton
                     icon={<PublicIcon />}
-                    title={_t("common|public")}
+                    title={_t("create_space|visible_title")}
                     description={_t("create_space|public_description")}
                     onClick={() => setVisibility(Visibility.Public)}
                 />
                 <SpacePillButton
                     icon={<LockSolidIcon />}
-                    title={_t("common|private")}
+                    title={_t("create_space|invisible_title")}
                     description={_t("create_space|private_description")}
                     onClick={() => setVisibility(Visibility.Private)}
                 />
@@ -382,7 +388,7 @@ const SpaceCreateMenu: React.FC<{
                     topic={topic}
                     setTopic={setTopic}
                     priceReais={priceReais}
-                    setPriceReais={setPriceReais}
+                    setPriceReais={visibility === Visibility.Public ? setPriceReais : undefined}
                     alias={alias}
                     setAlias={setAlias}
                     showAliasField={visibility === Visibility.Public}

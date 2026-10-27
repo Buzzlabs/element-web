@@ -10,6 +10,7 @@ import Spinner from "../../../elements/Spinner";
 import SettingsFieldset from "../../SettingsFieldset";
 import { changeAccessType, changePrice, changeVisibility, getRoomVisibility } from "../../../../../utils/admin/roomBusiness";
 import { useIsAdmin } from "../../../../../hooks/useIsAdmin";
+import { reaisToCents } from "../../../../../utils/admin/price";
 
 interface IProps {
     room: Room;
@@ -100,12 +101,12 @@ export const BusinessVisibilitySection: React.FC<IProps> = ({ room }) => {
             priceCents = 0;
         } else {
             // privada visível: preço obrigatório > 0
-            const parsed = parseInt(priceReais.trim(), 10);
-            if (isNaN(parsed) || parsed <= 0) {
+            const cents = reaisToCents(priceReais);
+            if (cents === null || cents <= 0) {
                 showError("Missing price: private visible rooms must define a price");
                 return;
             }
-            priceCents = parsed * 100;
+            priceCents = cents;
         }
 
         setSaving(true);
@@ -121,14 +122,14 @@ export const BusinessVisibilitySection: React.FC<IProps> = ({ room }) => {
     };
 
     const onSavePrice = async (): Promise<void> => {
-        const parsed = parseInt(priceReais.trim(), 10);
-        if (isNaN(parsed) || parsed < 0) {
+        const cents = reaisToCents(priceReais);
+        if (cents === null || cents <= 0) {
             showError("Preço inválido");
             return;
         }
         setSaving(true);
         try {
-            await changePrice(room.roomId, parsed * 100);
+            await changePrice(room.roomId, cents);
         } catch (e) {
             showError(e instanceof Error ? e.message : "Não foi possível alterar o preço");
         } finally {
