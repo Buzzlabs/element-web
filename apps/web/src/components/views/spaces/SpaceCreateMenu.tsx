@@ -282,7 +282,8 @@ const SpaceCreateMenu: React.FC<{
         }
 
         const priceText = String(priceReais).trim();
-        const priceCents = priceText === "" ? 0 : reaisToCents(priceText);
+        // Only visible spaces can have a price; invisible ones are always free.
+        const priceCents = visibility !== Visibility.Public || priceText === "" ? 0 : reaisToCents(priceText);
         if (priceCents === null) {
             setError("Preço inválido. Use um valor como 10,50.");
             setBusy(false);
@@ -387,7 +388,7 @@ const SpaceCreateMenu: React.FC<{
                     topic={topic}
                     setTopic={setTopic}
                     priceReais={priceReais}
-                    setPriceReais={setPriceReais}
+                    setPriceReais={visibility === Visibility.Public ? setPriceReais : undefined}
                     alias={alias}
                     setAlias={setAlias}
                     showAliasField={visibility === Visibility.Public}
