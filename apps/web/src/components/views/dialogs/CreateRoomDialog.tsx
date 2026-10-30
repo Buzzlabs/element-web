@@ -564,7 +564,7 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
 
                         <SettingsToggleInput
                             name="visible"
-                            label="Exibir no Explore"
+                            label={_t("buzzlabs|show_in_explore")}
                             checked={this.state.visible}
                             onChange={(e) =>
                                 this.setState({ visible: e.target.checked })
@@ -576,7 +576,7 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
                         this.state.joinRule !== JoinRule.Public && (
                             <>
                                 <Field
-                                    label="Preço"
+                                    label={_t("buzzlabs|price_label")}
                                     value={this.state.price}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                         this.setState({
@@ -594,7 +594,7 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
                                 {
                                     this.state.invalidPrice && (
                                         <div className="mx_Field_error">
-                                            Escolha um valor maior que zero.
+                                            {_t("buzzlabs|price_greater_than_zero")}
                                         </div>
                                     )
                                 }

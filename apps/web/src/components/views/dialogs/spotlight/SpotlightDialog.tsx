@@ -1469,7 +1469,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                                 <strong>{r.name ?? r.roomId}</strong>
                                 {typeof r.numJoinedMembers === "number" && (
                                     <span style={{ opacity: 0.7 }}>
-                                        {" "}· {r.numJoinedMembers} integrante(s)
+                                        {" "}· {_t("common|n_members", { count: r.numJoinedMembers })}
                                     </span>
                                 )}
                             </li>

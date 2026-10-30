@@ -10,6 +10,7 @@ import Spinner from "../../../elements/Spinner";
 import SettingsFieldset from "../../SettingsFieldset";
 import { changeAccessType, changePrice, changeVisibility, getRoomVisibility } from "../../../../../utils/admin/roomBusiness";
 import { useIsAdmin } from "../../../../../hooks/useIsAdmin";
+import { _t } from "../../../../../languageHandler";
 
 interface IProps {
     room: Room;
@@ -18,13 +19,13 @@ interface IProps {
 function translateError(message: string): string {
     switch (message) {
         case "Cannot set price on a non-visible room":
-            return "Essa sala está invisível e não pode ter preço";
+            return _t("buzzlabs|price_rule_invisible");
         case "Public rooms cannot have a price":
-            return "Salas públicas não podem ter preço";
+            return _t("buzzlabs|price_rule_public");
         case "Private visible rooms must have price > 0":
-            return "Salas privadas precisam de um preço maior que zero";
+            return _t("buzzlabs|price_rule_private_needs_price");
         case "Missing price: private visible rooms must define a price":
-            return "Preço obrigatório para chats privados visíveis";
+            return _t("buzzlabs|price_required_visible_private");
         default:
             return message;
     }
@@ -114,7 +115,7 @@ export const BusinessVisibilitySection: React.FC<IProps> = ({ room }) => {
             setVisible(next);
             if (!next) setPriceReais("0");
         } catch (e) {
-            showError(e instanceof Error ? e.message : "Não foi possível alterar a visibilidade");
+            showError(e instanceof Error ? e.message : _t("buzzlabs|visibility_change_failed"));
         } finally {
             setSaving(false);
         }
@@ -123,14 +124,14 @@ export const BusinessVisibilitySection: React.FC<IProps> = ({ room }) => {
     const onSavePrice = async (): Promise<void> => {
         const parsed = parseInt(priceReais.trim(), 10);
         if (isNaN(parsed) || parsed < 0) {
-            showError("Preço inválido");
+            showError(_t("buzzlabs|price_invalid"));
             return;
         }
         setSaving(true);
         try {
             await changePrice(room.roomId, parsed * 100);
         } catch (e) {
-            showError(e instanceof Error ? e.message : "Não foi possível alterar o preço");
+            showError(e instanceof Error ? e.message : _t("buzzlabs|price_change_failed"));
         } finally {
             setSaving(false);
         }
@@ -141,28 +142,28 @@ export const BusinessVisibilitySection: React.FC<IProps> = ({ room }) => {
 
     let helperText: string;
     if (!visible) {
-        helperText = "Preço será usado quando o chat ficar visível";
+        helperText = _t("buzzlabs|price_helper_when_visible");
     } else if (isPublic) {
-        helperText = "Salas públicas sempre custam 0";
+        helperText = _t("buzzlabs|price_helper_public");
     } else {
-        helperText = "Preço obrigatório para chats privados visíveis";
+        helperText = _t("buzzlabs|price_required_visible_private");
     }
 
     const domain = room.client.getDomain();
 
     return (
-        <SettingsFieldset legend="Visibilidade e preço">
+        <SettingsFieldset legend={_t("buzzlabs|visibility_price_legend")}>
             <SettingsToggleInput
                 name="business-visibility"
                 checked={visible}
                 disabled={saving}
                 onChange={(e) => onToggleVisible(e.target.checked)}
-                label={`Chat pode ser descoberto na busca em ${domain ?? "este servidor"}`}
+                label={_t("buzzlabs|discoverable_label", { domain: domain ?? _t("buzzlabs|this_server") })}
             />
 
             <Field
                 type="number"
-                label="Preço do chat (R$)"
+                label={_t("buzzlabs|chat_price_label")}
                 value={priceReais}
                 disabled={!priceEditable || saving}
                 onChange={(e: { target: { value: React.SetStateAction<string>; }; }) => setPriceReais(e.target.value)}
@@ -172,7 +173,7 @@ export const BusinessVisibilitySection: React.FC<IProps> = ({ room }) => {
 
             {canSavePrice && (
                 <AccessibleButton kind="primary" disabled={saving} onClick={onSavePrice}>
-                    {saving ? "Salvando..." : "Salvar preço"}
+                    {saving ? _t("buzzlabs|saving") : _t("buzzlabs|save_price")}
                 </AccessibleButton>
             )}
         </SettingsFieldset>
