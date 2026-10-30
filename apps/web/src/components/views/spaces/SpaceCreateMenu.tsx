@@ -212,7 +212,7 @@ export const SpaceCreateForm: React.FC<ISpaceCreateFormProps> = ({
                 <Field
                     name="spacePrice"
                     type="number"
-                    label={"Preço (R$) — deixe 0 para grátis"}
+                    label={_t("buzzlabs|space_price_label")}
                     value={priceReais ?? ""}
                     min={0}
                     step={0.01}
@@ -302,11 +302,11 @@ const SpaceCreateMenu: React.FC<{
 
             const status = e?.status;
             if (status === 403) {
-                setError("Você não tem permissão para criar espaços públicos.");
+                setError(_t("buzzlabs|space_create_forbidden"));
             } else if (status === 409) {
-                setError("Já existe um espaço com esse endereço. Escolha outro.");
+                setError(_t("buzzlabs|space_address_taken"));
             } else {
-                setError("Não foi possível criar o espaço. Tente novamente.");
+                setError(_t("buzzlabs|space_create_failed"));
             }
             setBusy(false); // destrava o botão — sem isso fica preso em "criando..."
         }

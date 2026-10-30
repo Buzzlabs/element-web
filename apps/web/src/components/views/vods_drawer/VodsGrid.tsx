@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState, type JSX } from "react";
 
 import { fetchVods, type LiveShow } from "../../../vods/vodsData";
+import { _t } from "../../../languageHandler";
 
 interface VodsGridProps {
     /** Room whose VODs are listed. */
@@ -91,7 +92,7 @@ export function VodsGrid({
             )}
 
             {allLives.length === 0 && !loading && (
-                <div style={{ textAlign: "center", padding: "16px" }}>Nenhum vod encontrado</div>
+                <div style={{ textAlign: "center", padding: "16px" }}>{_t("buzzlabs|vods_empty")}</div>
             )}
 
             <div
@@ -140,7 +141,7 @@ export function VodsGrid({
                                         borderRadius: "6px",
                                     }}
                                 >
-                                    AO VIVO
+                                    {_t("buzzlabs|badge_live")}
                                 </span>
                             )}
                         </div>
@@ -188,7 +189,7 @@ export function VodsGrid({
                 ))}
             </div>
 
-            {loading && <div style={{ textAlign: "center", padding: "12px" }}>Carregando…</div>}
+            {loading && <div style={{ textAlign: "center", padding: "12px" }}>{_t("common|loading")}</div>}
 
             {hasMore && !loading && (
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>

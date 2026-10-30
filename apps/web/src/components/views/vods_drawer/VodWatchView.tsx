@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, type JSX } from "react";
 import Hls from "hls.js"
 
 import { fetchVods, type LiveShow } from "../../../vods/vodsData";
+import { _t } from "../../../languageHandler";
 
 /** Mocked channel identity while the backend doesn't provide it. */
 const CHANNEL_NAME = "Canal Principal";
@@ -109,7 +110,7 @@ export function VodWatchView({ roomId, live, onClose, onSelectVod }: VodWatchVie
                         color: "var(--cpd-color-text-primary, #1b1d22)",
                     }}
                 >
-                    ← Voltar
+                    ← {_t("action|back")}
                 </button>
             </div>
 
@@ -218,7 +219,7 @@ export function VodWatchView({ roomId, live, onClose, onSelectVod }: VodWatchVie
                             color: "var(--cpd-color-text-primary, #1b1d22)",
                         }}
                     >
-                        Próximos vídeos
+                        {_t("buzzlabs|up_next")}
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                         {related.map((item) => (
@@ -265,7 +266,7 @@ export function VodWatchView({ roomId, live, onClose, onSelectVod }: VodWatchVie
                                                 borderRadius: "5px",
                                             }}
                                         >
-                                            AO VIVO
+                                            {_t("buzzlabs|badge_live")}
                                         </span>
                                     )}
                                 </div>

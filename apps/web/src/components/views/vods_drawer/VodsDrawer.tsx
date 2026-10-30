@@ -4,6 +4,7 @@ import { VodsGrid } from "./VodsGrid";
 import { EventsTable } from "./EventsTable";
 import { VodWatchView } from "./VodWatchView";
 import { type LiveShow } from "../../../vods/vodsData";
+import { _t } from "../../../languageHandler";
 
 /**
  * Height of the closed drawer "peek" strip. Exported so RoomView can add a
@@ -144,7 +145,7 @@ export function VodsDrawer({ roomId, showVods, showEvents, open, onOpenChange }:
                     <div style={{ overflowY: "auto", flex: 1, minHeight: 0, paddingRight: "4px" }}>
                         <VodsGrid
                             roomId={roomId}
-                            sectionTag="Destaques"
+                            sectionTag={_t("buzzlabs|section_featured")}
                             initialVisibleCount={6}
                             loadMoreCount={3}
                             onSelectVod={setWatchingVod}
@@ -179,7 +180,7 @@ export function VodsDrawer({ roomId, showVods, showEvents, open, onOpenChange }:
                             color: "var(--cpd-color-text-action-accent, #0dbd8b)",
                         }}
                     >
-                        PRÓXIMOS EVENTOS
+                        {_t("buzzlabs|events_upcoming")}
                     </div>
                     <div style={{ flex: 1, minHeight: 0 }}>
                         <EventsTable roomId={roomId} />
@@ -241,8 +242,8 @@ export function VodsDrawer({ roomId, showVods, showEvents, open, onOpenChange }:
             >
                 {handleBar}
                 <div style={{ display: "flex" }}>
-                    {showVods && tabButton("Rolou por aqui", "rolou")}
-                    {showEvents && tabButton("Eventos", "eventos")}
+                    {showVods && tabButton(_t("buzzlabs|tab_vods"), "rolou")}
+                    {showEvents && tabButton(_t("buzzlabs|tab_events"), "eventos")}
                 </div>
             </div>
             <div style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
@@ -250,7 +251,7 @@ export function VodsDrawer({ roomId, showVods, showEvents, open, onOpenChange }:
                     <>
                         <VodsGrid
                             roomId={roomId}
-                            sectionTag="Destaques"
+                            sectionTag={_t("buzzlabs|section_featured")}
                             initialVisibleCount={4}
                             loadMoreCount={2}
                             onSelectVod={setWatchingVod}

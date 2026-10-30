@@ -731,7 +731,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 if (result.discoverRoom.room_kind === "space") {
                     const space = result.discoverRoom;
                     const isPaid = Number(space.price) > 0;
-                    const buttonLabel = isPaid ? "Pagar" : "Entrar";
+                    const buttonLabel = isPaid ? _t("buzzlabs|pay") : _t("buzzlabs|join");
 
                     const onAction = async (ev: ButtonEvent): Promise<void> => {
                         ev.stopPropagation();
@@ -774,7 +774,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                             <div className="mx_SpotlightDialog_result_multiline_text">
                             <span className="mx_SpotlightDialog_result_multiline_name">{space.name}</span>
                             <div className="mx_SpotlightDialog_result_details">
-                                {isPaid ? `R$ ${(space.price / 100).toFixed(2)}` : "Grátis"}
+                                {isPaid ? `R$ ${(space.price / 100).toFixed(2)}` : _t("buzzlabs|price_free")}
                                 {" · "}
                                 <AccessibleButton
                                 kind="link"
@@ -786,7 +786,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                                 style={{ color: "inherit", 
                                 fontWeight: "normal",textDecoration: "underline" }}
                             >
-                                Ver salas
+                                {_t("buzzlabs|view_rooms")}
                             </AccessibleButton>
                             </div>
                         </div>
@@ -797,7 +797,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 const room = result.discoverRoom;
                 const isPaid = Number(room.price) > 0;
                 const buttonLabel = isPaid ? 
-                "Pagar" : "Entrar";
+                _t("buzzlabs|pay") : _t("buzzlabs|join");
 
                 const onAction = (ev: ButtonEvent): void => {
                     ev.stopPropagation();
@@ -836,8 +836,8 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                         <div className="mx_SpotlightDialog_result_multiline_text">
                             <span className="mx_SpotlightDialog_result_multiline_name">{room.name}</span>
                             <div className="mx_SpotlightDialog_result_details">
-                                {room.member_count} {room.member_count === 1 ? "membro" : "membros"}
-                                {isPaid ? ` · R$ ${(room.price / 100).toFixed(2)}` : " · Grátis"}
+                                {_t("common|n_members", { count: room.member_count })}
+                                {isPaid ? ` · R$ ${(room.price / 100).toFixed(2)}` : ` · ${_t("buzzlabs|price_free")}`}
                             </div>
                         </div>
                     </Option>
@@ -1079,13 +1079,13 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
             if (discoverError) {
                 content = (
                     <div className="mx_SpotlightDialog_otherSearches_messageSearchText">
-                        Não foi possível carregar os espaços.
+                        {_t("buzzlabs|spaces_load_failed")}
                     </div>
                 );
             } else if (!discoverLoading && results[Section.DiscoverSpaces].length === 0) {
                 content = (
                     <div className="mx_SpotlightDialog_otherSearches_messageSearchText">
-                        Nenhum espaço disponível no momento.
+                        {_t("buzzlabs|spaces_empty")}
                     </div>
                 );
             } else {
@@ -1450,12 +1450,12 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 }}
                 onClick={(e) => e.stopPropagation()}
             >
-                <h3 style={{ marginTop: 0 }}>Salas em {detailsSpace.name}</h3>
+                <h3 style={{ marginTop: 0 }}>{_t("buzzlabs|space_rooms_title", { name: detailsSpace.name })}</h3>
 
                 {detailsLoading ? (
-                    <p>Carregando…</p>
+                    <p>{_t("common|loading")}</p>
                 ) : detailsRooms.length === 0 ? (
-                    <p>Nenhuma sala encontrada neste espaço.</p>
+                    <p>{_t("buzzlabs|space_rooms_empty")}</p>
                 ) : (
                     <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                         {detailsRooms.map((r) => (
@@ -1469,7 +1469,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                                 <strong>{r.name ?? r.roomId}</strong>
                                 {typeof r.numJoinedMembers === "number" && (
                                     <span style={{ opacity: 0.7 }}>
-                                        {" "}· {r.numJoinedMembers} integrante(s)
+                                        {" "}· {_t("common|n_members", { count: r.numJoinedMembers })}
                                     </span>
                                 )}
                             </li>
@@ -1479,7 +1479,7 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
 
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
                     <AccessibleButton kind="primary" onClick={() => setDetailsSpace(null)}>
-                        Fechar
+                        {_t("action|close")}
                     </AccessibleButton>
                 </div>
             </div>
@@ -1511,20 +1511,20 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 }}
                 onClick={(e) => e.stopPropagation()}
             >
-                <h3 style={{ marginTop: 0 }}>Confirmar pagamento?</h3>
+                <h3 style={{ marginTop: 0 }}>{_t("buzzlabs|confirm_payment_title")}</h3>
                 <p>
-                    Espaço: <strong>{payingSpace.name}</strong>
+                    {_t("buzzlabs|space_label")} <strong>{payingSpace.name}</strong>
                     <br />
-                    Acesso a todas as salas incluídas
+                    {_t("buzzlabs|space_access_note")}
                     <br />
-                    Valor: <strong>R$ {(payingSpace.price / 100).toFixed(2)}</strong>
+                    {_t("buzzlabs|value_label")} <strong>R$ {(payingSpace.price / 100).toFixed(2)}</strong>
                 </p>
                 <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "16px" }}>
                     <AccessibleButton kind="secondary" onClick={() => setPayingSpace(null)}>
-                        Cancelar
+                        {_t("action|cancel")}
                     </AccessibleButton>
                     <AccessibleButton kind="primary" onClick={confirmSpacePayment}>
-                        Pagar
+                        {_t("buzzlabs|pay")}
                     </AccessibleButton>
                 </div>
             </div>
@@ -1556,18 +1556,18 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 }}
                 onClick={(e) => e.stopPropagation()}
             >
-                <h3 style={{ marginTop: 0 }}>Confirmar pagamento?</h3>
+                <h3 style={{ marginTop: 0 }}>{_t("buzzlabs|confirm_payment_title")}</h3>
                 <p>
-                    Sala: <strong>{payingRoom.name}</strong>
+                    {_t("buzzlabs|room_label")} <strong>{payingRoom.name}</strong>
                     <br />
-                    Valor: <strong>R$ {(payingRoom.price / 100).toFixed(2)}</strong>
+                    {_t("buzzlabs|value_label")} <strong>R$ {(payingRoom.price / 100).toFixed(2)}</strong>
                 </p>
                 <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "16px" }}>
                     <AccessibleButton kind="secondary" onClick={() => setPayingRoom(null)}>
-                        Cancelar
+                        {_t("action|cancel")}
                     </AccessibleButton>
                     <AccessibleButton kind="primary" onClick={confirmPayment}>
-                        Pagar
+                        {_t("buzzlabs|pay")}
                     </AccessibleButton>
                 </div>
             </div>
