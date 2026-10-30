@@ -141,7 +141,7 @@ export function VodsGrid({
                                         borderRadius: "6px",
                                     }}
                                 >
-                                    AO VIVO
+                                    {_t("buzzlabs|badge_live")}
                                 </span>
                             )}
                         </div>

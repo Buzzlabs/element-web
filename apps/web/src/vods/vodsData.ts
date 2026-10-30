@@ -156,7 +156,7 @@ export async function fetchEvents(roomId: string): Promise<EventItem[]> {
     if (!res.ok) throw new Error(`schedule_service respondeu ${res.status}`);
     const json = (await res.json()) as { items: ScheduleServiceEvent[] };
     return json.items.map((e) => ({
-        summary: e.summary ?? "Evento",
+        summary: e.summary ?? _t("buzzlabs|event_default_summary"),
         start: new Date(e.start.dateTime ?? e.start.date),
     }));
 }
