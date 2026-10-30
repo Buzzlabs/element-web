@@ -1,4 +1,5 @@
 import { MatrixClientPeg } from "../../MatrixClientPeg";
+import { _t } from "../../languageHandler";
 
 function baseUrl(): string {
     return MatrixClientPeg.safeGet().getHomeserverUrl();
@@ -33,6 +34,6 @@ export async function setUserAdmin(userId: string, admin: boolean): Promise<void
     );
     if (!res.ok) {
         // 403 = quem chamou não é admin; 400/404 = user inválido; etc.
-        throw new Error((await readError(res)) ?? `Falha ao atualizar admin (status ${res.status})`);
+        throw new Error((await readError(res)) ?? _t("buzzlabs|promote_admin_status_failed", { status: res.status }));
     }
 }

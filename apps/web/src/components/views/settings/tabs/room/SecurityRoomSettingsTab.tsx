@@ -163,11 +163,11 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
         }
 
         const { finished } = Modal.createDialog(TextInputDialog, {
-            title: "Iniciar transmissão",
-            description: "Qual o título desta transmissão?",
-            placeholder: "Ex: Live de hoje — entrevista especial",
+            title: _t("buzzlabs|live_start"),
+            description: _t("buzzlabs|live_start_description"),
+            placeholder: _t("buzzlabs|live_start_placeholder"),
             value: this.props.room.name || "Live",   // <-- era defaultValue, agora é value
-            button: "Iniciar",
+            button: _t("action|start"),
         });
 
         const [confirmed, value] = await finished;
@@ -685,8 +685,8 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
         const canEnableEncryption = !isEncrypted && !isEncryptionForceDisabled && hasEncryptionPermission;
             const calendarSection = this.state.roomFeatures["events"] && (
             <SettingsFieldset
-                legend={"Calendário de eventos"}
-                description={"ID do Google Calendar que fornece os eventos desta sala."}
+                legend={_t("buzzlabs|feature_events")}
+                description={_t("buzzlabs|calendar_description")}
             >
                 <input
                     className="mx_LiveStreamInput"
@@ -702,14 +702,14 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
                     onClick={this.onSaveCalendar}
                     disabled={this.state.calendarBusy || this.state.calendarInput.trim() === this.state.roomCalendarId}
                 >
-                    {"Salvar"}
+                    {_t("action|save")}
                 </AccessibleButton>
             </SettingsFieldset>
         );
         const streamSection = this.state.roomFeatures["live"] && (
             <SettingsFieldset
-                legend={"Canal de transmissão (Live)"}
-                description={"URL de reprodução (HLS) do canal usado para transmitir ao vivo nesta sala."}
+                legend={_t("buzzlabs|live_channel_legend")}
+                description={_t("buzzlabs|live_channel_description")}
             >
                 <input
                     type="text"
@@ -724,7 +724,7 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
                     onClick={this.onSaveStream}
                     disabled={this.state.streamBusy || this.state.streamInput.trim() === this.state.streamPlaybackUrl}
                 >
-                    {"Salvar"}
+                    {_t("action|save")}
                 </AccessibleButton>
 
                 {/* controle de iniciar/encerrar — só faz sentido se já tem URL salva */}
@@ -736,10 +736,10 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
                             disabled={this.state.streamBusy}
                         >
                             {this.state.streamBusy
-                                ? "Aguarde…"
+                                ? _t("buzzlabs|please_wait")
                                 : this.state.isLive
-                                  ? "Encerrar transmissão"
-                                  : "Iniciar transmissão"}
+                                  ? _t("buzzlabs|live_end_action")
+                                  : _t("buzzlabs|live_start")}
                         </AccessibleButton>
                     </div>
                 )}
@@ -747,8 +747,8 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
         );
         const featuresSection = (
         <SettingsFieldset
-            legend={"Funcionalidades da sala"}
-            description={"Ative ou desative abas opcionais para esta sala."}
+            legend={_t("buzzlabs|room_features_legend")}
+            description={_t("buzzlabs|room_features_description")}
         >
             {ROOM_FEATURES.map(({ key, label }) => (
                 <div
@@ -756,12 +756,12 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
                     className="mx_SettingsFlag"
                     style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}
                 >
-                    <span>{label}</span>
+                    <span>{_t(label)}</span>
                     <ToggleSwitch
                         checked={!!this.state.roomFeatures[key]}
                         disabled={this.state.featuresBusy}
                         onChange={(checked) => this.onFeatureToggle(key, checked)}
-                        aria-label={label}
+                        aria-label={_t(label)}
                     />
                 </div>
             ))}

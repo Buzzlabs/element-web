@@ -1,6 +1,7 @@
 import React, { useEffect, useState, type JSX } from "react";
 
 import { fetchEvents, type EventItem } from "../../../vods/vodsData";
+import { _t } from "../../../languageHandler";
 
 function isSameDay(a: Date, b: Date): boolean {
     return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -11,8 +12,8 @@ function formatDate(eventDate: Date): string {
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
 
-    if (isSameDay(eventDate, today)) return "Hoje";
-    if (isSameDay(eventDate, tomorrow)) return "Amanhã";
+    if (isSameDay(eventDate, today)) return _t("buzzlabs|events_today");
+    if (isSameDay(eventDate, tomorrow)) return _t("buzzlabs|events_tomorrow");
     return `${eventDate.getDate()}/${eventDate.getMonth() + 1}`;
 }
 
@@ -46,11 +47,11 @@ export function EventsTable({ roomId }: EventsTableProps): JSX.Element {
     }, [roomId]);
 
     if (loading) {
-        return <div style={{ textAlign: "center", padding: "24px" }}>Carregando…</div>;
+        return <div style={{ textAlign: "center", padding: "24px" }}>{_t("common|loading")}</div>;
     }
 
     if (events.length === 0) {
-        return <div style={{ textAlign: "center", padding: "24px" }}>Nenhum evento próximo.</div>;
+        return <div style={{ textAlign: "center", padding: "24px" }}>{_t("buzzlabs|events_empty")}</div>;
     }
 
     return (

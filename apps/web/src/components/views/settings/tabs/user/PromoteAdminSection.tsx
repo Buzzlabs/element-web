@@ -9,6 +9,7 @@ import { useIsAdmin } from "../../../../../hooks/useIsAdmin";
 import { SettingsSubsection } from "../../shared/SettingsSubsection";
 import { SettingsSection } from "../../shared/SettingsSection";
 import ErrorDialog from "../../../dialogs/ErrorDialog";
+import { _t } from "../../../../../languageHandler";
 
 
 export const PromoteAdminSection: React.FC = () => {
@@ -24,7 +25,7 @@ export const PromoteAdminSection: React.FC = () => {
     const onPromoteClick = (): void => {
     const target = userId.trim();
     if (!target) {
-        setFeedback({ ok: false, msg: "Informe o ID do usuário..." });
+        setFeedback({ ok: false, msg: _t("buzzlabs|promote_admin_missing_id") });
         return;
     }
 
@@ -42,11 +43,11 @@ export const PromoteAdminSection: React.FC = () => {
                 await setUserAdmin(target, true);
                 setUserId("");
                 Modal.createDialog(ErrorDialog, {
-                    title: "Sucesso",
-                    description: `${target} agora é administrador global.`,
+                    title: _t("buzzlabs|promote_admin_success_title"),
+                    description: _t("buzzlabs|promote_admin_done", { target }),
                 });
             } catch (e) {
-                setFeedback({ ok: false, msg: e instanceof Error ? e.message : "Não foi possível promover." });
+                setFeedback({ ok: false, msg: e instanceof Error ? e.message : _t("buzzlabs|promote_admin_failed") });
             } finally {
                 setBusy(false);
             }
@@ -54,14 +55,14 @@ export const PromoteAdminSection: React.FC = () => {
     };
 
     return (
-        <SettingsSection heading="Administração">
+        <SettingsSection heading={_t("buzzlabs|promote_admin_heading")}>
             <SettingsSubsection
-                heading="Administradores globais"
-                description="Promova outro usuário a administrador global. Apenas administradores podem fazer isso."
+                heading={_t("buzzlabs|promote_admin_subheading")}
+                description={_t("buzzlabs|promote_admin_description")}
             >
                 <Field
-                    label="ID do usuário"
-                    placeholder="@fulano:seu-dominio"
+                    label={_t("buzzlabs|promote_admin_user_id_label")}
+                    placeholder={_t("buzzlabs|promote_admin_user_id_placeholder")}
                     value={userId}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserId(e.target.value)}
                     disabled={busy}
