@@ -36,6 +36,7 @@ import { isGlobalAdmin } from "../../utils/admin/isGlobalAdmin";
 import { keepIfSame } from "../../utils/keepIfSame";
 import { DefaultTagID } from "../../stores/room-list-v3/skip-list/tag";
 import { RoomListSectionHeaderViewModel } from "./RoomListSectionHeaderViewModel";
+import { canCreateRoomInSpace } from "./utils";
 import { getCustomSectionData, isCustomSectionTag, CHATS_TAG } from "../../stores/room-list-v3/section";
 import SettingsStore from "../../settings/SettingsStore";
 import { tagRoom } from "../../utils/room/tagRoom";
@@ -99,6 +100,8 @@ export class RoomListViewModel
      * Reference to the currently displayed toast, used to automatically close the toast after a timeout.
      */
     private toastRef?: number;
+
+    private isAdmin = false;
 
     public constructor(props: RoomListViewModelProps) {
         // Get initial rooms
@@ -185,7 +188,20 @@ export class RoomListViewModel
     }
 
     private async loadAdminStatus(): Promise<void> {
-        const canCreateRoom = await isGlobalAdmin();
+        this.isAdmin = await isGlobalAdmin();
+        this.updateCanCreateRoom();
+    }
+
+    /**
+     * Recompute canCreateRoom for the active space. Only global admins can
+     * create rooms, and inside a space they also need the Matrix permission.
+     */
+    private updateCanCreateRoom(): void {
+        const canCreateRoom = canCreateRoomInSpace(
+            this.isAdmin,
+            this.props.client,
+            SpaceStore.instance.activeSpaceRoom,
+        );
         this.snapshot.merge({ canCreateRoom });
     }
 
@@ -421,6 +437,7 @@ export class RoomListViewModel
             // Space changed - get the last selected room for the new space to prevent flicker
             const lastSelectedRoom = SpaceStore.instance.getLastSelectedRoomIdForSpace(newSpaceId);
 
+            this.updateCanCreateRoom();
             this.updateRoomListData(true, lastSelectedRoom);
             return;
         }
