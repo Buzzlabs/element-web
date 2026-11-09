@@ -31,7 +31,7 @@ import SettingsStore from "../../settings/SettingsStore";
 import RoomListStoreV3 from "../../stores/room-list-v3/RoomListStoreV3";
 import { SortingAlgorithm } from "../../stores/room-list-v3/skip-list/sorters";
 import { SettingLevel } from "../../settings/SettingLevel";
-import { createRoom, hasCreateRoomRights } from "./utils";
+import { canCreateRoomInSpace, createRoom } from "./utils";
 import { isGlobalAdmin } from "../../utils/admin/isGlobalAdmin";
 
 export interface Props {
@@ -316,7 +316,7 @@ function computeHeaderSpaceState(
     const activeSpace = spaceStore.activeSpaceRoom;
     const title = getHeaderTitle(spaceStore);
 
-    const canCreateRoom = hasCreateRoomRights(matrixClient, activeSpace);
+    const canCreateRoom = canCreateRoomInSpace(isAdmin, matrixClient, activeSpace);
     const canCreateVideoRoom = getCanCreateVideoRoom(canCreateRoom);
     const displayComposeMenu = isAdmin; // canCreateRoom;
     const displaySpaceMenu = Boolean(activeSpace);

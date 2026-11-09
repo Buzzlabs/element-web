@@ -13,7 +13,12 @@ import { shouldShowComponent } from "../../../src/customisations/helpers/UICompo
 import defaultDispatcher from "../../../src/dispatcher/dispatcher";
 import { Action } from "../../../src/dispatcher/actions";
 import { showCreateNewRoom } from "../../../src/utils/space";
-import { hasCreateRoomRights, createRoom, hasAccessToNotificationMenu } from "../../../src/viewmodels/room-list/utils";
+import {
+    hasCreateRoomRights,
+    canCreateRoomInSpace,
+    createRoom,
+    hasAccessToNotificationMenu,
+} from "../../../src/viewmodels/room-list/utils";
 
 jest.mock("../../../src/customisations/helpers/UIComponents", () => ({
     shouldShowComponent: jest.fn(),
@@ -64,6 +69,41 @@ describe("utils", () => {
             } as unknown as RoomState);
 
             expect(hasCreateRoomRights(matrixClient)).toBe(true);
+        });
+    });
+
+    describe("canCreateRoomInSpace", () => {
+        const mockSpaceRights = (allowed: boolean): void => {
+            jest.spyOn(space.getLiveTimeline(), "getState").mockReturnValue({
+                maySendStateEvent: jest.fn().mockReturnValue(allowed),
+            } as unknown as RoomState);
+        };
+
+        beforeEach(() => {
+            mocked(shouldShowComponent).mockReturnValue(true);
+        });
+
+        it("should return false when the user is not an admin, even with the rights", () => {
+            expect(canCreateRoomInSpace(false, matrixClient)).toBe(false);
+        });
+
+        it("should return true for an admin outside a space", () => {
+            expect(canCreateRoomInSpace(true, matrixClient)).toBe(true);
+        });
+
+        it("should return false for an admin without the Matrix permission in the space", () => {
+            mockSpaceRights(false);
+            expect(canCreateRoomInSpace(true, matrixClient, space)).toBe(false);
+        });
+
+        it("should return true for an admin with the Matrix permission in the space", () => {
+            mockSpaceRights(true);
+            expect(canCreateRoomInSpace(true, matrixClient, space)).toBe(true);
+        });
+
+        it("should return false when UIComponent.CreateRooms is disabled", () => {
+            mocked(shouldShowComponent).mockReturnValue(false);
+            expect(canCreateRoomInSpace(true, matrixClient, space)).toBe(false);
         });
     });
 
