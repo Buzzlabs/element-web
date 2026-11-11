@@ -27,10 +27,15 @@ export const useDiscoverRooms = (): {
         setError(undefined);
         try {
             // baseUrl do homeserver, ex: https://matrix.exemplo.com
-            const baseUrl = MatrixClientPeg.safeGet().getHomeserverUrl();
+            const client = MatrixClientPeg.safeGet();
+            const baseUrl = client.getHomeserverUrl();
+            // o endpoint exige login: o synapse filtra as salas por usuário (community_gate)
             const res = await fetch(`${baseUrl}/_synapse/room_service/discover`, {
                 method: "GET",
-                headers: { Accept: "application/json" },
+                headers: {
+                    Accept: "application/json",
+                    Authorization: `Bearer ${client.getAccessToken()}`,
+                },
             });
 
             if (!res.ok) {
