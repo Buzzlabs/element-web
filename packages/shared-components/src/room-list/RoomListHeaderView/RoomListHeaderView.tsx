@@ -32,7 +32,7 @@ export interface RoomListHeaderViewSnapshot {
     title: string;
     /**
      * Whether to display the compose menu
-     * True if the user can create rooms
+     * True if the user may use the compose menu (global admins only in this fork)
      */
     displayComposeMenu: boolean;
     /**
@@ -141,7 +141,7 @@ interface RoomListHeaderViewProps {
 
 /**
  * The header view for the room list
- * The space name is displayed and a compose menu is shown if the user can create rooms
+ * The space name is displayed and a compose menu is shown if the user may use it (global admins only in this fork)
  *
  * @example
  * ```tsx
@@ -187,24 +187,7 @@ export function RoomListHeaderView({ vm }: Readonly<RoomListHeaderViewProps>): J
                             )}
                         </IconButton>
                     )}
-
-                    {/* If we don't display the compose menu, it means that the user can only send DM */}
-                    {displayComposeMenu ? (
-                        <ComposeMenuView vm={vm} />
-                    ) : (null
-                        // <IconButton
-                        //     size="28px"
-                        //     style={{ padding: "4px" }}
-                        //     onClick={(e) => vm.createChatRoom(e.nativeEvent)}
-                        //     tooltip={_t("action|new_conversation")}
-                        // >
-                        //     {useComposeIcon ? (
-                        //         <ComposeIcon color="var(--cpd-color-icon-secondary)" aria-hidden />
-                        //     ) : (
-                        //         <PlusIcon color="var(--cpd-color-icon-secondary)" aria-hidden />
-                        //     )}
-                        // </IconButton>
-                    )}
+                    {displayComposeMenu && <ComposeMenuView vm={vm} />}
                 </Flex>
             </Flex>
         </Flex>

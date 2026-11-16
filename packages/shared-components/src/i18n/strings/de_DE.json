@@ -71,7 +71,6 @@
         "empty": {
             "no_chats": "Bisher keine Chats",
             "no_chats_description": "Lege los, indem du jemandem schreibst oder eine Gruppe erstellst",
-            "no_chats_description_no_room_rights": "Lege los, indem du jemandem schreibst",
             "no_favourites": "Du hast noch keine Chats als Favorit markiert",
             "no_favourites_description": "In den Chat Einstellungen kannst du einen Chat als Favorit markieren",
             "no_invites": "Du hast keine ungelesenen Einladungen",
