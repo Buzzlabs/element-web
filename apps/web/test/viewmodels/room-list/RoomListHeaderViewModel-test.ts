@@ -24,7 +24,8 @@ import {
     showSpaceSettings,
 } from "../../../src/utils/space";
 import { createTestClient, mkSpace } from "../../test-utils";
-import { createRoom, hasCreateRoomRights } from "../../../src/viewmodels/room-list/utils";
+import { canCreateRoomInSpace, createRoom } from "../../../src/viewmodels/room-list/utils";
+import { isGlobalAdmin } from "../../../src/utils/admin/isGlobalAdmin";
 import PosthogTrackers from "../../../src/PosthogTrackers";
 
 jest.mock("../../../src/PosthogTrackers", () => ({
@@ -41,9 +42,13 @@ jest.mock("../../../src/utils/space", () => ({
     showSpaceSettings: jest.fn(),
 }));
 
+jest.mock("../../../src/utils/admin/isGlobalAdmin", () => ({
+    isGlobalAdmin: jest.fn().mockResolvedValue(false),
+}));
+
 jest.mock("../../../src/viewmodels/room-list/utils", () => ({
     createRoom: jest.fn(),
-    hasCreateRoomRights: jest.fn(),
+    canCreateRoomInSpace: jest.fn(),
 }));
 
 describe("RoomListHeaderViewModel", () => {
@@ -56,7 +61,8 @@ describe("RoomListHeaderViewModel", () => {
 
         mockSpace = mkSpace(matrixClient, "!space:server");
 
-        mocked(hasCreateRoomRights).mockReturnValue(true);
+        mocked(canCreateRoomInSpace).mockReturnValue(true);
+        mocked(isGlobalAdmin).mockResolvedValue(false);
         mocked(shouldShowSpaceSettings).mockReturnValue(true);
 
         jest.spyOn(SettingsStore, "getValue").mockImplementation((settingName: string) => {
@@ -120,13 +126,24 @@ describe("RoomListHeaderViewModel", () => {
         });
 
         it("should hide compose menu when user cannot create rooms", () => {
-            mocked(hasCreateRoomRights).mockReturnValue(false);
+            mocked(canCreateRoomInSpace).mockReturnValue(false);
 
             vm = new RoomListHeaderViewModel({ matrixClient, spaceStore: SpaceStore.instance });
 
             const snapshot = vm.getSnapshot();
             expect(snapshot.displayComposeMenu).toBe(false);
             expect(snapshot.canCreateRoom).toBe(false);
+        });
+
+        it("should compute canCreateRoom with the admin status and the active space", async () => {
+            mocked(isGlobalAdmin).mockResolvedValue(true);
+            jest.spyOn(SpaceStore.instance, "activeSpaceRoom", "get").mockReturnValue(mockSpace);
+
+            vm = new RoomListHeaderViewModel({ matrixClient, spaceStore: SpaceStore.instance });
+            await new Promise((resolve) => setTimeout(resolve, 0));
+
+            expect(canCreateRoomInSpace).toHaveBeenLastCalledWith(true, matrixClient, mockSpace);
+            expect(vm.getSnapshot().displayComposeMenu).toBe(true);
         });
 
         it("should display compose menu when section feature is enabled@", () => {

@@ -66,3 +66,12 @@ export function hasCreateRoomRights(matrixClient: MatrixClient, space?: Room | n
             ?.maySendStateEvent(EventType.RoomAvatar, matrixClient.getSafeUserId()),
     );
 }
+
+/**
+ * Single rule for "can the user create a room here".
+ * Only global admins can create rooms, and inside a space they also need
+ * the Matrix permission on that space (see hasCreateRoomRights).
+ */
+export function canCreateRoomInSpace(isAdmin: boolean, matrixClient: MatrixClient, space?: Room | null): boolean {
+    return isAdmin && hasCreateRoomRights(matrixClient, space);
+}

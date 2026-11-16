@@ -18,7 +18,8 @@ import { Action } from "../../../src/dispatcher/actions";
 import { SdkContextClass } from "../../../src/contexts/SDKContext";
 import DMRoomMap from "../../../src/utils/DMRoomMap";
 import { RoomListViewModel } from "../../../src/viewmodels/room-list/RoomListViewModel";
-import { hasCreateRoomRights } from "../../../src/viewmodels/room-list/utils";
+import { canCreateRoomInSpace } from "../../../src/viewmodels/room-list/utils";
+import { isGlobalAdmin } from "../../../src/utils/admin/isGlobalAdmin";
 import { DefaultTagID } from "../../../src/stores/room-list-v3/skip-list/tag";
 import SettingsStore from "../../../src/settings/SettingsStore";
 import { tagRoom } from "../../../src/utils/room/tagRoom";
@@ -34,8 +35,12 @@ jest.mock("../../../src/utils/room/getSectionTagForRoom", () => ({
     getSectionTagForRoom: jest.fn().mockReturnValue(null),
 }));
 
+jest.mock("../../../src/utils/admin/isGlobalAdmin", () => ({
+    isGlobalAdmin: jest.fn().mockResolvedValue(false),
+}));
+
 jest.mock("../../../src/viewmodels/room-list/utils", () => ({
-    hasCreateRoomRights: jest.fn().mockReturnValue(false),
+    canCreateRoomInSpace: jest.fn().mockReturnValue(false),
     hasAccessToOptionsMenu: jest.fn().mockReturnValue(true),
     hasAccessToNotificationMenu: jest.fn().mockReturnValue(true),
 }));
@@ -68,7 +73,8 @@ describe("RoomListViewModel", () => {
         jest.spyOn(SpaceStore.instance, "activeSpaceRoom", "get").mockReturnValue(null);
         jest.spyOn(SdkContextClass.instance.roomViewStore, "getRoomId").mockReturnValue(null);
 
-        mocked(hasCreateRoomRights).mockReturnValue(false);
+        mocked(canCreateRoomInSpace).mockReturnValue(false);
+        mocked(isGlobalAdmin).mockResolvedValue(false);
     });
 
     afterEach(() => {
@@ -101,10 +107,19 @@ describe("RoomListViewModel", () => {
             expect(viewModel.getSnapshot().isRoomListEmpty).toBe(true);
         });
 
-        it("should set canCreateRoom based on user rights", () => {
-            mocked(hasCreateRoomRights).mockReturnValue(true);
+        it("should keep canCreateRoom hidden until the admin status is loaded", () => {
             viewModel = new RoomListViewModel({ client: matrixClient });
 
+            expect(viewModel.getSnapshot().canCreateRoom).toBe(false);
+        });
+
+        it("should set canCreateRoom from the admin status and the user rights", async () => {
+            mocked(isGlobalAdmin).mockResolvedValue(true);
+            mocked(canCreateRoomInSpace).mockReturnValue(true);
+            viewModel = new RoomListViewModel({ client: matrixClient });
+            await new Promise((resolve) => setTimeout(resolve, 0));
+
+            expect(canCreateRoomInSpace).toHaveBeenCalledWith(true, matrixClient, null);
             expect(viewModel.getSnapshot().canCreateRoom).toBe(true);
         });
     });
@@ -156,6 +171,28 @@ describe("RoomListViewModel", () => {
     });
 
     describe("Space switching", () => {
+        it("should recompute canCreateRoom for the new space when the space changes", async () => {
+            const space = mkStubRoom("!space:server", "Space", matrixClient);
+            mocked(isGlobalAdmin).mockResolvedValue(true);
+            mocked(canCreateRoomInSpace).mockReturnValue(true);
+            viewModel = new RoomListViewModel({ client: matrixClient });
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            expect(viewModel.getSnapshot().canCreateRoom).toBe(true);
+
+            mocked(canCreateRoomInSpace).mockReturnValue(false);
+            jest.spyOn(SpaceStore.instance, "activeSpaceRoom", "get").mockReturnValue(space);
+            jest.spyOn(RoomListStoreV3.instance, "getSortedRoomsInActiveSpace").mockReturnValue({
+                spaceId: "!space:server",
+                sections: [{ tag: CHATS_TAG, rooms: [room1] }],
+            });
+            jest.spyOn(SpaceStore.instance, "getLastSelectedRoomIdForSpace").mockReturnValue(null);
+
+            RoomListStoreV3.instance.emit(RoomListStoreV3Event.ListsUpdate);
+
+            expect(canCreateRoomInSpace).toHaveBeenLastCalledWith(true, matrixClient, space);
+            expect(viewModel.getSnapshot().canCreateRoom).toBe(false);
+        });
+
         it("should update room list when space changes", () => {
             viewModel = new RoomListViewModel({ client: matrixClient });
 
