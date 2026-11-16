@@ -8,6 +8,7 @@ import QuestionDialog from "../dialogs/QuestionDialog";
 import ErrorDialog from "../dialogs/ErrorDialog";
 import { getLiveWidget, stopLive } from "../../../utils/live/liveWidget";
 import { useMatrixClientContext } from "../../../contexts/MatrixClientContext";
+import UIStore from "../../../stores/UIStore";
 
 interface IProps {
     room: Room;
@@ -69,8 +70,8 @@ const LiveStreamWidget: React.FC<IProps> = ({ room, canManage }) => {
         const dx = e.clientX - dragState.current.startX;
         const dy = e.clientY - dragState.current.startY;
 
-        const maxX = window.innerWidth - width - MARGIN;
-        const maxY = window.innerHeight - height - MARGIN;
+        const maxX = UIStore.instance.windowWidth - width - MARGIN;
+        const maxY = UIStore.instance.windowHeight - height - MARGIN;
 
         setPosition({
             x: Math.min(Math.max(dragState.current.origX + dx, MARGIN), Math.max(maxX, MARGIN)),
@@ -94,7 +95,7 @@ const LiveStreamWidget: React.FC<IProps> = ({ room, canManage }) => {
     const onResizeMove = (e: React.PointerEvent): void => {
         if (!resizeState.current) return;
         const dx = e.clientX - resizeState.current.startX;
-        const maxWidth = window.innerWidth * MAX_WIDTH_RATIO;
+        const maxWidth = UIStore.instance.windowWidth * MAX_WIDTH_RATIO;
         setWidth(Math.min(Math.max(resizeState.current.origWidth + dx, MIN_WIDTH), maxWidth));
     };
 
@@ -103,24 +104,25 @@ const LiveStreamWidget: React.FC<IProps> = ({ room, canManage }) => {
     };
 
     // --------- player HLS ---------
+    const liveUrl = live?.url;
     useEffect(() => {
-        if (!live || !videoRef.current) return;
+        if (!liveUrl || !videoRef.current) return;
         const video = videoRef.current;
 
         if (Hls.isSupported()) {
             const hls = new Hls();
-            hls.loadSource(live.url);
+            hls.loadSource(liveUrl);
             hls.attachMedia(video);
             hlsRef.current = hls;
         } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-            video.src = live.url;
+            video.src = liveUrl;
         }
 
         return () => {
             hlsRef.current?.destroy();
             hlsRef.current = null;
         };
-    }, [live?.url]);
+    }, [liveUrl]);
 
     const onStop = useCallback((): void => {
         Modal.createDialog(QuestionDialog, {

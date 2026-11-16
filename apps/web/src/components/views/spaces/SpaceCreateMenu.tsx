@@ -212,7 +212,7 @@ export const SpaceCreateForm: React.FC<ISpaceCreateFormProps> = ({
                 <Field
                     name="spacePrice"
                     type="number"
-                    label={"Preço (R$) — deixe 0 para grátis"}
+                    label="Preço (R$) — deixe 0 para grátis"
                     value={priceReais ?? ""}
                     min={0}
                     step={0.01}

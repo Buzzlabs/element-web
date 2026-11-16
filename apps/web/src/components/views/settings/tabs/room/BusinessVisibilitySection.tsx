@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { EventType, JoinRule, MatrixEvent, RoomStateEvent, type Room } from "matrix-js-sdk/src/matrix";
+import { EventType, JoinRule, type MatrixEvent, RoomStateEvent, type Room } from "matrix-js-sdk/src/matrix";
 import { SettingsToggleInput } from "@vector-im/compound-web";
 
 import Modal from "../../../../../Modal";

@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 
-import { _t } from "../../../../../languageHandler";
 import AccessibleButton from "../../../elements/AccessibleButton";
 import { SettingsSubsection } from "../../shared/SettingsSubsection";
 import { useIsAdmin } from "../../../../../hooks/useIsAdmin";

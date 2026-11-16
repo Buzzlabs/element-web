@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { type Room, type MatrixClient, RoomStateEvent, MatrixEvent } from "matrix-js-sdk/src/matrix";
+import { type Room, type MatrixClient, RoomStateEvent, type MatrixEvent } from "matrix-js-sdk/src/matrix";
 
 const LIVE_WIDGET_TYPE = "im.vector.modular.widgets";
 const LIVE_WIDGET_STATE_KEY = "live_widget";
