@@ -48,11 +48,14 @@ import {
     getRoomFeatures, setRoomFeature, ROOM_FEATURES,
     getRoomCalendar, setRoomCalendar,
     getStream, setStream,
+     startYoutubeBroadcast, stopYoutubeBroadcast,
 } from "../../../../../utils/admin/roomFeatures";
 import { getLiveWidget, startLive, stopLive } from "../../../../../utils/live/liveWidget"
 import ToggleSwitch from "../../../elements/ToggleSwitch";
 import defaultDispatcher from "../../../../../dispatcher/dispatcher";
 import TextInputDialog from "../../../dialogs/TextInputDialog";
+import ModalWidgetDialog from "../../../dialogs/ModalWidgetDialog";
+import StreamConfigDialog from "../../../dialogs/StreamConfigDialog";
 
 interface IProps {
     room: Room;
@@ -75,6 +78,7 @@ interface IState {
     streamInput: string;
     streamBusy: boolean;
     isLive: boolean;
+    streamProvider: "fixed" | "youtube";
 }
 
 export default class SecurityRoomSettingsTab extends React.Component<IProps, IState> {
@@ -110,6 +114,7 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
             streamInput: "",
             streamBusy: false,
             isLive: false,
+            streamProvider: "fixed",
         };
     }
 
@@ -141,23 +146,63 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
         this.setState({ isLive: !!widget });
     };
 
+    private onConfigureStream = (): void => {
+        Modal.createDialog(StreamConfigDialog, {
+            roomId: this.props.room.roomId,
+        }).finished.then(([changed]) => {
+            if (changed) {
+                this.loadStream();
+            }
+        });
+    };
+
     private onToggleLive = async (): Promise<void> => {
-        // encerrar: não precisa perguntar nada
+        // encerrar
         if (this.state.isLive) {
+            const isYoutube = this.state.streamProvider === "youtube";
+
+            const { finished } = Modal.createDialog(QuestionDialog, {
+                title: "Encerrar transmissão?",
+                description: isYoutube
+                    ? "Isso vai encerrar a transmissão no YouTube para todos os " +
+                      "espectadores, inclusive fora do Element. Essa ação não pode " +
+                      "ser desfeita."
+                    : "Tem certeza que deseja encerrar a transmissão ao vivo?",
+                button: "Encerrar",
+            });
+
+            const [confirmed] = await finished;
+            if (!confirmed) return;
+
             this.setState({ streamBusy: true });
             try {
+                if (isYoutube) {
+                    // Encerra de verdade no YouTube antes de remover o
+                    // widget -- se o YouTube recusar, nem o widget nem o
+                    // registro local são tocados, e o erro aparece pro
+                    // admin (ver stopYoutubeBroadcast).
+                    await stopYoutubeBroadcast(this.props.room.roomId);
+                }
                 await stopLive(this.props.room.client, this.props.room.roomId);
                 this.refreshLiveState();
             } catch (e) {
                 logger.error("Falha ao encerrar transmissão:", e);
+                Modal.createDialog(ErrorDialog, {
+                    title: "Erro",
+                    description:
+                        e instanceof Error
+                            ? e.message
+                            : "Não foi possível encerrar a transmissão. Tente novamente, ou " +
+                              "encerre manualmente pelo YouTube Studio.",
+                });
             } finally {
                 this.setState({ streamBusy: false });
             }
             return;
         }
 
-        // iniciar: pede o título antes
-        if (!this.state.streamPlaybackUrl) {
+        // iniciar
+        if (this.state.streamProvider === "fixed" && !this.state.streamPlaybackUrl) {
             logger.error("onToggleLive: no playback_url configured");
             return;
         }
@@ -166,7 +211,7 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
             title: "Iniciar transmissão",
             description: "Qual o título desta transmissão?",
             placeholder: "Ex: Live de hoje — entrevista especial",
-            value: this.props.room.name || "Live",   // <-- era defaultValue, agora é value
+            value: this.props.room.name || "Live",
             button: "Iniciar",
         });
 
@@ -177,12 +222,34 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
 
         this.setState({ streamBusy: true });
         try {
-            await startLive(
-                this.props.room.client,
-                this.props.room.roomId,
-                title,
-                this.state.streamPlaybackUrl,
-            );
+            if (this.state.streamProvider === "youtube") {
+                // YouTube: cria a transmissão via backend, mostra a chave pro OBS
+                const broadcast = await startYoutubeBroadcast(this.props.room.roomId, title);
+                await startLive(
+                    this.props.room.client,
+                    this.props.room.roomId,
+                    title,
+                    broadcast.watch_url,
+                );
+                Modal.createDialog(ErrorDialog, {
+                    title: "Transmissão criada!",
+                    description: (
+                        <div>
+                            <p>Configure seu OBS com:</p>
+                            <p><strong>Servidor:</strong> {broadcast.ingestion_address}</p>
+                            <p><strong>Chave:</strong> {broadcast.stream_key}</p>
+                        </div>
+                    ),
+                });
+            } else {
+                // fixed: usa a URL já salva
+                await startLive(
+                    this.props.room.client,
+                    this.props.room.roomId,
+                    title,
+                    this.state.streamPlaybackUrl,
+                );
+            }
             this.refreshLiveState();
         } catch (e) {
             logger.error("Falha ao iniciar transmissão:", e);
@@ -194,10 +261,11 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
 
     private loadStream = async (): Promise<void> => {
         try {
-            const { playback_url } = await getStream(this.props.room.roomId);
+            const { playback_url, provider } = await getStream(this.props.room.roomId);
             this.setState({
                 streamPlaybackUrl: playback_url ?? "",
                 streamInput: playback_url ?? "",
+                streamProvider: provider,
             });
         } catch (e) {
             logger.error("Falha ao carregar canal de transmissão:", e);
@@ -709,26 +777,19 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
         const streamSection = this.state.roomFeatures["live"] && (
             <SettingsFieldset
                 legend={"Canal de transmissão (Live)"}
-                description={"URL de reprodução (HLS) do canal usado para transmitir ao vivo nesta sala."}
+                description={
+                    this.state.streamProvider === "youtube"
+                        ? "As transmissões são criadas automaticamente no YouTube."
+                        : this.state.streamPlaybackUrl
+                        ? `Canal próprio configurado: ${this.state.streamPlaybackUrl}`
+                        : "Nenhum canal configurado ainda."
+                }
             >
-                <input
-                    type="text"
-                    value={this.state.streamInput}
-                    placeholder="https://exemplo.com/live/canal.m3u8"
-                    onChange={(e) => this.setState({ streamInput: e.target.value })}
-                    disabled={this.state.streamBusy}
-                    style={{ width: "100%", padding: "8px", marginBottom: "8px", boxSizing: "border-box" }}
-                />
-                <AccessibleButton
-                    kind="primary"
-                    onClick={this.onSaveStream}
-                    disabled={this.state.streamBusy || this.state.streamInput.trim() === this.state.streamPlaybackUrl}
-                >
-                    {"Salvar"}
+                <AccessibleButton kind="primary_outline" onClick={this.onConfigureStream}>
+                    {"Configurar transmissão"}
                 </AccessibleButton>
 
-                {/* controle de iniciar/encerrar — só faz sentido se já tem URL salva */}
-                {this.state.streamPlaybackUrl && (
+                {(this.state.streamProvider === "youtube" || this.state.streamPlaybackUrl) && (
                     <div style={{ marginTop: "16px" }}>
                         <AccessibleButton
                             kind={this.state.isLive ? "danger" : "primary_outline"}
@@ -738,8 +799,8 @@ export default class SecurityRoomSettingsTab extends React.Component<IProps, ISt
                             {this.state.streamBusy
                                 ? "Aguarde…"
                                 : this.state.isLive
-                                  ? "Encerrar transmissão"
-                                  : "Iniciar transmissão"}
+                                ? "Encerrar transmissão"
+                                : "Iniciar transmissão"}
                         </AccessibleButton>
                     </div>
                 )}
