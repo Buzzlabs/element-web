@@ -84,7 +84,7 @@
         "lodash": "npm:lodash-es@4.18.1",
         "maplibre-gl": "^5.0.0",
         "matrix-encrypt-attachment": "^1.0.3",
-        "matrix-js-sdk": "github:matrix-org/matrix-js-sdk#develop",
+        "matrix-js-sdk": "github:matrix-org/matrix-js-sdk#33e4db98814edb1e100ac8b9721cf84de998f429",
         "matrix-widget-api": "^1.16.1",
         "memoize-one": "^6.0.0",
         "mime": "^4.0.4",

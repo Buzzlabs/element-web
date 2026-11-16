@@ -36,5 +36,9 @@ if [ "$js_sdk_dep" = "github:matrix-org/matrix-js-sdk#develop" ]; then
     pnpm -C apps/web link ./matrix-js-sdk
     pnpm link ./matrix-js-sdk
 else
+    if [ -n "$JS_SDK_GITHUB_BASE_REF" ]; then
+        echo "ERROR: JS_SDK_GITHUB_BASE_REF ($JS_SDK_GITHUB_BASE_REF) was requested, but package.json pins matrix-js-sdk to $js_sdk_dep, so it would be ignored." >&2
+        exit 1
+    fi
     echo "Skipping matrix-js-sdk fetch and link as package.json pins $js_sdk_dep"
 fi
