@@ -10,7 +10,6 @@ import { SettingsSubsection } from "../../shared/SettingsSubsection";
 import { SettingsSection } from "../../shared/SettingsSection";
 import ErrorDialog from "../../../dialogs/ErrorDialog";
 
-
 export const PromoteAdminSection: React.FC = () => {
     const isAdmin = useIsAdmin();
 
@@ -22,11 +21,11 @@ export const PromoteAdminSection: React.FC = () => {
     if (!isAdmin) return null;
 
     const onPromoteClick = (): void => {
-    const target = userId.trim();
-    if (!target) {
-        setFeedback({ ok: false, msg: "Informe o ID do usuário..." });
-        return;
-    }
+        const target = userId.trim();
+        if (!target) {
+            setFeedback({ ok: false, msg: "Informe o ID do usuário..." });
+            return;
+        }
 
         const { finished } = Modal.createDialog(QuestionDialog, {
             title: "Promover a administrador global?",
@@ -69,10 +68,16 @@ export const PromoteAdminSection: React.FC = () => {
                 />
 
                 {feedback && (
-                    <div role="alert" style={{ marginTop: "8px", fontSize: "14px",
-                        color: feedback.ok
-                            ? "var(--cpd-color-text-success-primary, #0a0)"
-                            : "var(--cpd-color-text-critical-primary, #d00)" }}>
+                    <div
+                        role="alert"
+                        style={{
+                            marginTop: "8px",
+                            fontSize: "14px",
+                            color: feedback.ok
+                                ? "var(--cpd-color-text-success-primary, #0a0)"
+                                : "var(--cpd-color-text-critical-primary, #d00)",
+                        }}
+                    >
                         {feedback.msg}
                     </div>
                 )}

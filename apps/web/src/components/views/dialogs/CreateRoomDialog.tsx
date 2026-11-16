@@ -93,7 +93,7 @@ interface IState {
      */
     canChangeEncryption: boolean;
     // módulo do synapse create room
-    useModuleCreation : true;
+    useModuleCreation: true;
     keyword: string;
     visible: boolean;
     price: string;
@@ -186,10 +186,7 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
         opts.useModuleCreation = true;
         opts.keyword = this.state.keyword;
         opts.visible = this.state.visible;
-        opts.access_type = 
-            this.state.joinRule === JoinRule.Public
-                ? "public"
-                : "private";
+        opts.access_type = this.state.joinRule === JoinRule.Public ? "public" : "private";
         opts.price = Number(this.state.price) * 100;
         return opts;
     }
@@ -234,11 +231,10 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
             if (this.state.useModuleCreation) {
                 try {
                     this.validateModuleRoom();
-                    } catch (e) {
-                        alert((e as Error).message);
-                        return;
-                    }
-    
+                } catch (e) {
+                    alert((e as Error).message);
+                    return;
+                }
             }
             this.props.onFinished(true, this.roomCreateOptions());
         } else {
@@ -326,11 +322,7 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
             throw new Error("Keyword inválida");
         }
 
-        if (
-            this.state.visible &&
-            this.state.joinRule !== JoinRule.Public &&
-            Number(this.state.price) <= 0
-        ) {
+        if (this.state.visible && this.state.joinRule !== JoinRule.Public && Number(this.state.price) <= 0) {
             this.setState({
                 invalidPrice: true,
             });
@@ -553,27 +545,25 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
                                 />
                             </details>
                         )}
-                         <Field
+                        <Field
                             label="Keyword"
                             value={this.state.keyword}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => this.setState({
-                                keyword: e.target.value,
-                                keywordAlreadyExists: false,
-                            })}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                this.setState({
+                                    keyword: e.target.value,
+                                    keywordAlreadyExists: false,
+                                })
+                            }
                         />
 
                         <SettingsToggleInput
                             name="visible"
                             label="Exibir no Explore"
                             checked={this.state.visible}
-                            onChange={(e) =>
-                                this.setState({ visible: e.target.checked })
-                            }
+                            onChange={(e) => this.setState({ visible: e.target.checked })}
                         />
 
-                       {
-                        this.state.visible &&
-                        this.state.joinRule !== JoinRule.Public && (
+                        {this.state.visible && this.state.joinRule !== JoinRule.Public && (
                             <>
                                 <Field
                                     label="Preço"
@@ -584,23 +574,14 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
                                             invalidPrice: false,
                                         })
                                     }
-                                    className={
-                                        this.state.invalidPrice
-                                            ? "mx_Field_invalid"
-                                            : undefined
-                                    }
+                                    className={this.state.invalidPrice ? "mx_Field_invalid" : undefined}
                                 />
 
-                                {
-                                    this.state.invalidPrice && (
-                                        <div className="mx_Field_error">
-                                            Escolha um valor maior que zero.
-                                        </div>
-                                    )
-                                }
+                                {this.state.invalidPrice && (
+                                    <div className="mx_Field_error">Escolha um valor maior que zero.</div>
+                                )}
                             </>
-                        )
-                    }
+                        )}
                     </Form.Root>
                 </div>
                 <DialogButtons

@@ -14,9 +14,7 @@
  * TODO: replace this whole function with a per-room lookup of
  * room_features(room_id, 'vods').
  */
-const ENABLED_ROOMS: ReadonlySet<string> = new Set<string>([
-    "!uLRDsaGOYkMZMgVhGu:localhost",
-]);
+const ENABLED_ROOMS: ReadonlySet<string> = new Set<string>(["!uLRDsaGOYkMZMgVhGu:localhost"]);
 
 export function isVodsDrawerEnabled(roomId: string | undefined): boolean {
     if (!roomId) return false;

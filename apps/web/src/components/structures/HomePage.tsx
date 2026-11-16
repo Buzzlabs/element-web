@@ -119,21 +119,27 @@ const HomePage: React.FC<IProps> = ({ justRegistered = false }) => {
         <AutoHideScrollbar className="mx_AutoHideScrollbar mx_HomePage mx_HomePage_default" as="main">
             <div className="mx_HomePage_default_wrapper">
                 {introSection}
-                <div className={classNames("mx_HomePage_default_buttons", {
-        "mx_HomePage_default_buttons_single": !isAdmin,
-    })}>
-                    {isAdmin &&(<AccessibleButton onClick={onClickSendDm} className="mx_HomePage_button_sendDm">
-                        <ChatSolidIcon />
-                        {_tDom("onboarding|send_dm")}
-                    </AccessibleButton>)}
+                <div
+                    className={classNames("mx_HomePage_default_buttons", {
+                        mx_HomePage_default_buttons_single: !isAdmin,
+                    })}
+                >
+                    {isAdmin && (
+                        <AccessibleButton onClick={onClickSendDm} className="mx_HomePage_button_sendDm">
+                            <ChatSolidIcon />
+                            {_tDom("onboarding|send_dm")}
+                        </AccessibleButton>
+                    )}
                     <AccessibleButton onClick={onClickExplore} className="mx_HomePage_button_explore">
                         <ExploreIcon />
                         {_tDom("onboarding|explore_rooms")}
                     </AccessibleButton>
-                    {isAdmin &&(<AccessibleButton onClick={onClickNewRoom} className="mx_HomePage_button_createGroup">
-                        <GroupIcon />
-                        {_tDom("onboarding|create_room")}
-                    </AccessibleButton>)}
+                    {isAdmin && (
+                        <AccessibleButton onClick={onClickNewRoom} className="mx_HomePage_button_createGroup">
+                            <GroupIcon />
+                            {_tDom("onboarding|create_room")}
+                        </AccessibleButton>
+                    )}
                 </div>
             </div>
         </AutoHideScrollbar>

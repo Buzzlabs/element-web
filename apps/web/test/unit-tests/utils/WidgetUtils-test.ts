@@ -48,9 +48,9 @@ describe("getLocalJitsiWrapperUrl", () => {
 
 describe("deterministicJitsiConferenceId", () => {
     it("builds <localpart>-<room-slug>", () => {
-        expect(
-            WidgetUtils.deterministicJitsiConferenceId("@matheus:matrix.buzzlabs.com.br", "Weekly Produto"),
-        ).toEqual("matheus-weekly-produto");
+        expect(WidgetUtils.deterministicJitsiConferenceId("@matheus:matrix.buzzlabs.com.br", "Weekly Produto")).toEqual(
+            "matheus-weekly-produto",
+        );
     });
 
     it("strips accents and symbols from the room name", () => {

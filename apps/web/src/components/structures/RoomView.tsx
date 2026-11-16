@@ -992,7 +992,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
             this.context.client.on(CryptoEvent.KeysChanged, this.onCrossSigningKeysChanged);
             this.context.client.on(MatrixEventEvent.Decrypted, this.onEventDecrypted);
         }
-        
+
         // Start listening for RoomViewStore updates
         this.roomViewStore.on(UPDATE_EVENT, this.onRoomViewStoreUpdate);
 
@@ -1048,20 +1048,20 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
     }
 
     private loadRoomFeatures = async (): Promise<void> => {
-    const roomId = this.state.room?.roomId;
-    if (!roomId) return;
-    try {
-        const features = await getRoomFeatures(roomId);
-        this.setState({
-            vodsEnabled: !!features["vods"],
-            eventsEnabled: !!features["events"],
-            liveEnabled: !!features["live"],
-        });
-    } catch {
-        this.setState({ vodsEnabled: false, eventsEnabled: false });
-        this.setState({ vodsEnabled: false, eventsEnabled: false, liveEnabled: false });
-    }
-};
+        const roomId = this.state.room?.roomId;
+        if (!roomId) return;
+        try {
+            const features = await getRoomFeatures(roomId);
+            this.setState({
+                vodsEnabled: !!features["vods"],
+                eventsEnabled: !!features["events"],
+                liveEnabled: !!features["live"],
+            });
+        } catch {
+            this.setState({ vodsEnabled: false, eventsEnabled: false });
+            this.setState({ vodsEnabled: false, eventsEnabled: false, liveEnabled: false });
+        }
+    };
 
     public shouldComponentUpdate(nextProps: IRoomProps, nextState: IRoomState): boolean {
         const hasPropsDiff = objectHasDiff(this.props, nextProps);
@@ -2713,9 +2713,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
                         {statusBarArea}
                         {previewBar}
                         {messageComposer}
-                        {anyDrawerFeature && (
-                            <div style={{ height: `${PEEK_HEIGHT}px`, flexShrink: 0 }} />
-                        )}
+                        {anyDrawerFeature && <div style={{ height: `${PEEK_HEIGHT}px`, flexShrink: 0 }} />}
                         {anyDrawerFeature && (
                             <VodsDrawer
                                 roomId={this.state.room.roomId}
@@ -2778,51 +2776,49 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
 
         return (
             <>
-            <ScopedRoomContextProvider {...this.state} roomViewStore={this.roomViewStore}>
-                <div
-                    className={mainClasses}
-                    ref={this.roomView}
-                    onKeyDown={this.onReactKeyDown}
-                    onFocus={this.onFocus}
-                    tabIndex={-1}
-                >
-                    {showChatEffects && this.roomView.current && (
-                        <EffectsOverlay roomWidth={this.roomView.current.offsetWidth} />
-                    )}
-                    <ErrorBoundary>
-                        <MainSplit
-                            panel={rightPanel}
-                            sizeKey={sizeKey}
-                            defaultSize={defaultSize}
-                            analyticsRoomType={analyticsRoomType}
-                        >
-                            <div
-                                className={mainSplitContentClasses}
-                                ref={this.roomViewBody}
-                                data-layout={this.state.layout}
+                <ScopedRoomContextProvider {...this.state} roomViewStore={this.roomViewStore}>
+                    <div
+                        className={mainClasses}
+                        ref={this.roomView}
+                        onKeyDown={this.onReactKeyDown}
+                        onFocus={this.onFocus}
+                        tabIndex={-1}
+                    >
+                        {showChatEffects && this.roomView.current && (
+                            <EffectsOverlay roomWidth={this.roomView.current.offsetWidth} />
+                        )}
+                        <ErrorBoundary>
+                            <MainSplit
+                                panel={rightPanel}
+                                sizeKey={sizeKey}
+                                defaultSize={defaultSize}
+                                analyticsRoomType={analyticsRoomType}
                             >
-                                {!this.props.hideHeader && (
-                                    <RoomHeader
-                                        room={this.state.room}
-                                        legacyAdditionalButtons={this.state.viewRoomOpts.buttons}
-                                        extraButtons={<>{extraButtons}</>}
-                                    />
-                                )}
-                                {mainSplitBody}
-                            </div>
-                        </MainSplit>
-                    </ErrorBoundary>
-                </div>
-            </ScopedRoomContextProvider>
-            {this.state.liveEnabled && this.state.room && (
+                                <div
+                                    className={mainSplitContentClasses}
+                                    ref={this.roomViewBody}
+                                    data-layout={this.state.layout}
+                                >
+                                    {!this.props.hideHeader && (
+                                        <RoomHeader
+                                            room={this.state.room}
+                                            legacyAdditionalButtons={this.state.viewRoomOpts.buttons}
+                                            extraButtons={<>{extraButtons}</>}
+                                        />
+                                    )}
+                                    {mainSplitBody}
+                                </div>
+                            </MainSplit>
+                        </ErrorBoundary>
+                    </div>
+                </ScopedRoomContextProvider>
+                {this.state.liveEnabled && this.state.room && (
                     <LiveStreamWidget
                         room={this.state.room}
-                        canManage={
-                            this.state.room.currentState.maySendStateEvent(
-                                "im.vector.modular.widgets",
-                                MatrixClientPeg.safeGet().getUserId() ?? "",
-                            )
-                        }
+                        canManage={this.state.room.currentState.maySendStateEvent(
+                            "im.vector.modular.widgets",
+                            MatrixClientPeg.safeGet().getUserId() ?? "",
+                        )}
                     />
                 )}
             </>

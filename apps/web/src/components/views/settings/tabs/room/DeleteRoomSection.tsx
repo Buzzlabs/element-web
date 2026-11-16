@@ -66,8 +66,7 @@ export const DeleteRoomSection: React.FC<IProps> = ({ roomId, onFinished }) => {
                     >
                         <h3 style={{ marginTop: 0 }}>Deletar esta sala?</h3>
                         <p>
-                            Esta ação é permanente. Todos os membros serão removidos e a sala não
-                            poderá ser recuperada.
+                            Esta ação é permanente. Todos os membros serão removidos e a sala não poderá ser recuperada.
                         </p>
                         <div
                             style={{
@@ -77,11 +76,7 @@ export const DeleteRoomSection: React.FC<IProps> = ({ roomId, onFinished }) => {
                                 marginTop: "16px",
                             }}
                         >
-                            <AccessibleButton
-                                kind="secondary"
-                                disabled={deleting}
-                                onClick={() => setConfirming(false)}
-                            >
+                            <AccessibleButton kind="secondary" disabled={deleting} onClick={() => setConfirming(false)}>
                                 Cancelar
                             </AccessibleButton>
                             <AccessibleButton kind="danger" disabled={deleting} onClick={onDelete}>

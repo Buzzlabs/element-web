@@ -22,7 +22,6 @@ import { SettingsSection } from "../../shared/SettingsSection";
 import { MediaPreviewAccountSettings } from "../user/MediaPreviewAccountSettings";
 import { DeleteRoomSection } from "./DeleteRoomSection";
 
-
 interface IProps {
     room: Room;
 }

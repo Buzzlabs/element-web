@@ -127,7 +127,7 @@ export function VodsDrawer({ roomId, showVods, showEvents, open, onOpenChange }:
         fontWeight: 700,
         color: "var(--cpd-color-text-primary, #1b1d22)",
     };
-    
+
     const wideBody = (
         <div
             style={{
@@ -216,7 +216,7 @@ export function VodsDrawer({ roomId, showVods, showEvents, open, onOpenChange }:
             </button>
         );
     };
- 
+
     // garante que selectedTab aponta pra uma aba habilitada
     const effectiveTab = (() => {
         if (selectedTab === "rolou" && showVods) return "rolou";
@@ -266,7 +266,7 @@ export function VodsDrawer({ roomId, showVods, showEvents, open, onOpenChange }:
                         />
                     </>
                 )}
-                {showEvents && effectiveTab === "eventos" && <EventsTable roomId={roomId}/>}
+                {showEvents && effectiveTab === "eventos" && <EventsTable roomId={roomId} />}
             </div>
         </div>
     );

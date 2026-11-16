@@ -22,9 +22,7 @@ const MARGIN = 16;
 
 function useLiveWidget(room: Room): { title: string; url: string } | null {
     const cli = useMatrixClientContext();
-    const [widget, setWidget] = useState<{ title: string; url: string } | null>(() =>
-        getLiveWidget(cli, room.roomId),
-    );
+    const [widget, setWidget] = useState<{ title: string; url: string } | null>(() => getLiveWidget(cli, room.roomId));
 
     useEffect(() => {
         const refresh = (): void => setWidget(getLiveWidget(cli, room.roomId));

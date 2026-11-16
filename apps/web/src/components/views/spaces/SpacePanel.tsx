@@ -382,9 +382,9 @@ const InnerSpacePanel = React.memo<IInnerSpacePanelProps>(
                         />
                     </li>
                 ))}
-                {isAdmin && (shouldShowComponent(UIComponent.CreateSpaces) && (
+                {isAdmin && shouldShowComponent(UIComponent.CreateSpaces) && (
                     <CreateSpaceButton isPanelCollapsed={isPanelCollapsed} setPanelCollapsed={setPanelCollapsed} />
-                ))}
+                )}
             </IndicatorScrollbar>
         );
     },

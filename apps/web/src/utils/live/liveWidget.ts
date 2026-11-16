@@ -32,10 +32,7 @@ export async function stopLive(client: MatrixClient, roomId: string): Promise<vo
     await client.sendStateEvent(roomId, LIVE_WIDGET_TYPE, {}, LIVE_WIDGET_STATE_KEY);
 }
 
-export function getLiveWidget(
-    client: MatrixClient,
-    roomId: string,
-): { title: string; url: string } | null {
+export function getLiveWidget(client: MatrixClient, roomId: string): { title: string; url: string } | null {
     const room = client.getRoom(roomId);
     if (!room) return null;
 

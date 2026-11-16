@@ -71,7 +71,9 @@ export const RoomListItemContent = memo(function RoomListItemContent({
                                     verticalAlign: "middle",
                                 }}
                             >
-                                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fff" }} />
+                                <span
+                                    style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fff" }}
+                                />
                                 AO VIVO
                             </span>
                         )}

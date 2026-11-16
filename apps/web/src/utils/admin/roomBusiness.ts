@@ -12,7 +12,7 @@ export interface SpaceChildRoom {
 export interface RoomVisibilityInfo {
     room_id: string;
     visible: boolean;
-    price: number; 
+    price: number;
     access_type: string; // "public" | "private"
 }
 
@@ -24,7 +24,7 @@ function authHeaders(): Record<string, string> {
     const accessToken = MatrixClientPeg.safeGet().getAccessToken();
     return {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        "Authorization": `Bearer ${accessToken}`,
     };
 }
 

@@ -11,7 +11,7 @@ import {
     type Room,
     EventType,
     GuestAccess,
-HistoryVisibility,
+    HistoryVisibility,
     JoinRule,
     type MatrixClient,
 } from "matrix-js-sdk/src/matrix";
@@ -51,7 +51,7 @@ const SpaceSettingsVisibilityTab: React.FC<IProps> = ({ matrixClient: cli, space
     const userId = cli.getUserId()!;
 
     const joinRule = useRoomState(space, (state) => state.getJoinRule());
-    
+
     const [guestAccessEnabled, setGuestAccessEnabled] = useLocalEcho<boolean>(
         () =>
             space.currentState.getStateEvents(EventType.RoomGuestAccess, "")?.getContent()?.guest_access ===
@@ -154,7 +154,7 @@ const SpaceSettingsVisibilityTab: React.FC<IProps> = ({ matrixClient: cli, space
                 >
                     <BusinessVisibilitySection room={space} />
                 </Form.Root>
-            
+
                 <SettingsFieldset
                     data-testid="access-fieldset"
                     legend={_t("room_settings|access|title")}
