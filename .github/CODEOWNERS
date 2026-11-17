@@ -43,3 +43,8 @@
 /apps/web/playwright/testcontainers/synapse.ts
 /apps/web/playwright/testcontainers/mas.ts
 
+
+# Buzzlabs fork: todo PR pede review automaticamente ao mantenedor do fork.
+# O GitHub usa a ÚLTIMA regra que casa com o arquivo, então esta linha precisa
+# ficar no fim do arquivo para valer em todo o repositório.
+* @zZMathSP
