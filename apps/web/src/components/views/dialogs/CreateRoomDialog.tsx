@@ -33,6 +33,7 @@ import { KeyBindingAction } from "../../../accessibility/KeyboardShortcuts";
 import { privateShouldBeEncrypted } from "../../../utils/rooms";
 import SettingsStore from "../../../settings/SettingsStore";
 import { UIFeature } from "../../../settings/UIFeature";
+import { reaisToCents } from "../../../utils/admin/price";
 
 interface IProps {
     type?: RoomType;
@@ -190,7 +191,7 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
             this.state.joinRule === JoinRule.Public
                 ? "public"
                 : "private";
-        opts.price = Number(this.state.price) * 100;
+        opts.price = reaisToCents(this.state.price) ?? 0;
         return opts;
     }
 
@@ -326,11 +327,12 @@ export default class CreateRoomDialog extends React.Component<IProps, IState> {
             throw new Error("Keyword inválida");
         }
 
-        if (
-            this.state.visible &&
-            this.state.joinRule !== JoinRule.Public &&
-            Number(this.state.price) <= 0
-        ) {
+        const priceInCents = reaisToCents(this.state.price);
+        const priceIsGarbage = this.state.price.trim() !== "" && priceInCents === null;
+        const paidRoomWithoutPrice =
+            this.state.visible && this.state.joinRule !== JoinRule.Public && (priceInCents ?? 0) <= 0;
+
+        if (priceIsGarbage || paidRoomWithoutPrice) {
             this.setState({
                 invalidPrice: true,
             });
