@@ -453,7 +453,7 @@ class RoomTile extends React.PureComponent<Props, State> {
                         background: "#fff",
                     }}
                 />
-                AO VIVO
+                {_t("buzzlabs|badge_live")}
             </span>
         ) : null;
 

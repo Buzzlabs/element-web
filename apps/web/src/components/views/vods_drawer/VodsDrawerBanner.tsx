@@ -1,5 +1,7 @@
 import React, { type JSX } from "react";
 
+import { _t } from "../../../languageHandler";
+
 interface VodsDrawerBannerProps {
     /** Called when the user clicks the banner/button to open the drawer. */
     onOpen: () => void;
@@ -45,7 +47,7 @@ export function VodsDrawerBanner({ onOpen }: VodsDrawerBannerProps): JSX.Element
                         whiteSpace: "nowrap",
                     }}
                 >
-                    Assista às lives anteriores e veja a programação
+                    {_t("buzzlabs|vods_banner_text")}
                 </span>
             </div>
             <button
@@ -66,7 +68,7 @@ export function VodsDrawerBanner({ onOpen }: VodsDrawerBannerProps): JSX.Element
                     color: "var(--cpd-color-text-on-solid-primary, #fff)",
                 }}
             >
-                Assistir 🎬
+                {_t("buzzlabs|vods_banner_action")} 🎬
             </button>
         </div>
     );

@@ -8,6 +8,7 @@ import QuestionDialog from "../dialogs/QuestionDialog";
 import ErrorDialog from "../dialogs/ErrorDialog";
 import { getLiveWidget, stopLive } from "../../../utils/live/liveWidget";
 import { useMatrixClientContext } from "../../../contexts/MatrixClientContext";
+import { _t } from "../../../languageHandler";
 
 interface IProps {
     room: Room;
@@ -124,9 +125,9 @@ const LiveStreamWidget: React.FC<IProps> = ({ room, canManage }) => {
 
     const onStop = useCallback((): void => {
         Modal.createDialog(QuestionDialog, {
-            title: "Encerrar transmissão?",
-            description: "Tem certeza que deseja encerrar a transmissão ao vivo?",
-            button: "Encerrar",
+            title: _t("buzzlabs|live_end_title"),
+            description: _t("buzzlabs|live_end_description"),
+            button: _t("buzzlabs|live_end_action"),
         }).finished.then(async ([confirmed]) => {
             if (!confirmed) return;
             setBusy(true);
@@ -134,8 +135,8 @@ const LiveStreamWidget: React.FC<IProps> = ({ room, canManage }) => {
                 await stopLive(cli, room.roomId);
             } catch (e) {
                 Modal.createDialog(ErrorDialog, {
-                    title: "Erro",
-                    description: e instanceof Error ? e.message : "Não foi possível encerrar a transmissão.",
+                    title: _t("common|error"),
+                    description: e instanceof Error ? e.message : _t("buzzlabs|live_end_failed"),
                 });
             } finally {
                 setBusy(false);
@@ -194,7 +195,7 @@ const LiveStreamWidget: React.FC<IProps> = ({ room, canManage }) => {
                         onClick={onStop}
                         onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
                     >
-                        {busy ? "…" : "Encerrar"}
+                        {busy ? "…" : _t("buzzlabs|live_end_action")}
                     </AccessibleButton>
                 )}
             </div>

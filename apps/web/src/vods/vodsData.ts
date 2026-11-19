@@ -11,6 +11,7 @@
  * (BACKEND_GET_EVENTS_URL) once available.
  */
 import { MatrixClientPeg } from "../MatrixClientPeg";
+import { _t } from "../languageHandler";
 
 function getBaseUrl(): string {
     const client = MatrixClientPeg.get();
@@ -108,7 +109,7 @@ function toLiveShow(item: VodServiceItem): LiveShow {
     return {
         id: String(item.id),
         title: normalizeTitle(rawTitle, startedAt),
-        category: item.isLive ? "Ao vivo" : "Gravação",
+        category: item.isLive ? _t("buzzlabs|vod_category_live") : _t("buzzlabs|vod_category_recording"),
         date: relativeDate(item.startedAt),
         startedAt,
         thumbnailUrl: item.latestThumbnail,
@@ -155,7 +156,7 @@ export async function fetchEvents(roomId: string): Promise<EventItem[]> {
     if (!res.ok) throw new Error(`schedule_service respondeu ${res.status}`);
     const json = (await res.json()) as { items: ScheduleServiceEvent[] };
     return json.items.map((e) => ({
-        summary: e.summary ?? "Evento",
+        summary: e.summary ?? _t("buzzlabs|event_default_summary"),
         start: new Date(e.start.dateTime ?? e.start.date),
     }));
 }

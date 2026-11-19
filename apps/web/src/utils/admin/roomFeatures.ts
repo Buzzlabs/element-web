@@ -1,9 +1,10 @@
 import { MatrixClientPeg } from "../../MatrixClientPeg";
+import { _td } from "../../languageHandler";
 
-export const ROOM_FEATURES: ReadonlyArray<{ key: string; label: string }> = [
-    { key: "vods", label: "Aba de VODs" },
-    { key: "events", label: "Calendário de eventos" },
-    { key: "live", label: "Transmissão ao vivo" },
+export const ROOM_FEATURES: ReadonlyArray<{ key: string; label: TranslationKey }> = [
+    { key: "vods", label: _td("buzzlabs|feature_vods") },
+    { key: "events", label: _td("buzzlabs|feature_events") },
+    { key: "live", label: _td("buzzlabs|feature_live") },
 ];
 
 export type RoomFeaturesMap = Record<string, boolean>;

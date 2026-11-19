@@ -34,9 +34,9 @@ export const DeleteRoomSection: React.FC<IProps> = ({ roomId, onFinished }) => {
     };
 
     return (
-        <SettingsSubsection heading="Deletar sala">
+        <SettingsSubsection heading={_t("buzzlabs|delete_room")}>
             <AccessibleButton kind="danger" disabled={deleting} onClick={() => setConfirming(true)}>
-                {deleting ? "Deletando..." : "Deletar sala"}
+                {deleting ? _t("buzzlabs|delete_room_deleting") : _t("buzzlabs|delete_room")}
             </AccessibleButton>
 
             {confirming && (
@@ -64,10 +64,9 @@ export const DeleteRoomSection: React.FC<IProps> = ({ roomId, onFinished }) => {
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <h3 style={{ marginTop: 0 }}>Deletar esta sala?</h3>
+                        <h3 style={{ marginTop: 0 }}>{_t("buzzlabs|delete_room_title")}</h3>
                         <p>
-                            Esta ação é permanente. Todos os membros serão removidos e a sala não
-                            poderá ser recuperada.
+                            {_t("buzzlabs|delete_room_warning")}
                         </p>
                         <div
                             style={{
@@ -82,10 +81,10 @@ export const DeleteRoomSection: React.FC<IProps> = ({ roomId, onFinished }) => {
                                 disabled={deleting}
                                 onClick={() => setConfirming(false)}
                             >
-                                Cancelar
+                                {_t("action|cancel")}
                             </AccessibleButton>
                             <AccessibleButton kind="danger" disabled={deleting} onClick={onDelete}>
-                                {deleting ? "Deletando..." : "Deletar"}
+                                {deleting ? _t("buzzlabs|delete_room_deleting") : _t("buzzlabs|delete_room_confirm")}
                             </AccessibleButton>
                         </div>
                     </div>

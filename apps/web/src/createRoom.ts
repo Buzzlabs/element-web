@@ -494,7 +494,7 @@ export default async function createRoom(client: MatrixClient, opts: IOpts): Pro
                     err.status === 409 &&
                     err.message.includes("Keyword already in use")
                 ) {
-                    description = "A chave informada já está em uso.";
+                    description = _t("buzzlabs|keyword_in_use");
                 }
                 if (err.errcode === "M_UNSUPPORTED_ROOM_VERSION") {
                     // Technically not possible with the UI as of April 2019 because there's no
